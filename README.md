@@ -1,19 +1,37 @@
-# Hồ sơ — Tạo bìa hồ sơ lưu trữ tự động
+# Bộ công cụ lưu trữ hồ sơ (Di Văn)
 
-Sinh **bìa hồ sơ lưu trữ** (.docx, khổ A4) hàng loạt từ một tệp dữ liệu **Excel (.xlsx)**.
-Giữ nguyên font, khung viền và bố cục của tệp mẫu; mỗi dòng dữ liệu là một bìa, mỗi bìa một trang.
+Gộp **3 chương trình** xử lý hồ sơ lưu trữ vào **một trang web duy nhất với 3 tab**
+(`server.py`). Mỗi chương trình đọc **Excel (.xlsx)** hàng loạt rồi xuất ra **Word (.docx)**;
+nhiều kết quả được đóng gói **.zip** để tải một lần. Giao diện kéo-thả nhiều tệp, xử lý
+**tuần tự** với **thanh tiến độ realtime** (không đơ UI).
 
-## Tính năng
+| Tab | Chương trình | Nguồn | Kết quả |
+|-----|--------------|-------|---------|
+| 📚 | **Tạo bìa hồ sơ** | `app.py` + `tao_bia.py` | Bìa A4, mỗi hồ sơ một trang |
+| 📑 | **Mục lục văn bản, tài liệu** | `Phanmem_muclucdang/app.py` + `muc_luc.py` | Word A4 **nằm ngang**, mỗi sheet một tệp |
+| 🏷️ | **In nhãn hộp lưu trữ** | `Innhan/app.py` + `in_nhan.py` | Word A4 **dọc**, 4 nhãn/trang |
 
-- Đọc Excel, tự bỏ qua dòng tiêu đề, chuẩn hóa ngày về `dd/mm/yyyy` (thiếu số 0 thì tự thêm,
-  chỉ tháng/năm → `mm/yyyy`, dạng dính liền `ddmmyyyy` → `dd/mm/yyyy`).
-- Điền dữ liệu theo **nội dung** (không phụ thuộc số thứ tự đoạn) nên bền với thay đổi mẫu.
-- **Khối dưới** (Phông số, ngày, số trang…) được neo cố định ở **đáy trang** bằng một text box
-  canh đáy riêng — tiêu đề dài bao nhiêu cũng không làm xê dịch.
-- Giao diện web hiện đại: kéo-thả **nhiều** tệp Excel → xử lý **tuần tự** với
-  **thanh tiến độ realtime** (không đơ UI) → tải về `.docx` (1 tệp) hoặc `.zip` (nhiều tệp).
+## Bắt đầu nhanh
 
-## Cấu trúc cột Excel (sheet đầu)
+```bash
+uv run server.py            # mở http://127.0.0.1:8000
+PORT=5019 uv run server.py  # đổi cổng
+```
+
+`uv` tự tạo `.venv` đúng nền tảng và cài thư viện theo `pyproject.toml` + `uv.lock`
+ngay lần chạy đầu — không cần kích hoạt môi trường ảo thủ công.
+Chưa có `uv`? Xem https://docs.astral.sh/uv/ hoặc chạy `./install.sh` (tự cài `uv` giúp bạn).
+
+Trang chủ (`/`) là vỏ chứa 3 tab; mỗi tab nạp một chương trình con qua đường dẫn
+`/bia/`, `/mucluc/`, `/nhan/` trong **cùng một tiến trình Flask**.
+
+## Ba chương trình & cấu trúc Excel
+
+### 📚 Tạo bìa hồ sơ  — tab `/bia/`
+
+Sinh **bìa hồ sơ** (.docx, A4 dọc) — mỗi dòng dữ liệu là một bìa, mỗi bìa một trang;
+giữ nguyên font, khung viền và bố cục của tệp mẫu. Nhập thêm **Phông số / Mục lục số**.
+Đọc **sheet đầu**, tự bỏ qua dòng tiêu đề, chuẩn hóa ngày về `dd/mm/yyyy`.
 
 | Cột | Nội dung |
 |-----|----------|
@@ -25,88 +43,107 @@ Giữ nguyên font, khung viền và bố cục của tệp mẫu; mỗi dòng d
 | F | Thời hạn bảo quản |
 | G | Dòng phông (đầu bìa) |
 
-## Chạy toàn bộ (3 tab) với uv — khuyến nghị
+### 📑 Mục lục văn bản, tài liệu  — tab `/mucluc/`
 
-Dự án gộp **3 chương trình** vào một trang duy nhất với 3 tab (`server.py`):
-📚 Tạo bìa hồ sơ · 📑 Mục lục văn bản · 🏷️ In nhãn hộp.
+Mỗi **sheet** trong mỗi tệp Excel → **một tệp Word A4 nằm ngang** (14 cột), tiện in từng
+phông/đơn vị. Nhập **Phông số / Mục lục số** để ghép **Mã hồ sơ** =
+`Phông số - Mục lục số - Hồ sơ số` (vd `A47.35.21-001-01-0001`).
+
+| Cột | Nội dung | Cột | Nội dung |
+|-----|----------|-----|----------|
+| A | Hồ sơ số | H | Độ mật |
+| B | Số thứ tự | I | Loại bản |
+| C | Số, ký hiệu | J | Trang số |
+| D | Ngày tháng | K | Số trang |
+| E | Tên loại và trích yếu | L | Từ khoá |
+| F | Tác giả | M | Ghi chú |
+| G | Người ký | N | Số lượng tệp |
+| | | O | Tên tệp tài liệu |
+
+### 🏷️ In nhãn hộp lưu trữ  — tab `/nhan/`
+
+Mỗi **tệp** Excel → **một tệp Word A4 dọc** (gộp mọi sheet), 4 nhãn/trang, dựng theo khuôn
+`Innhan/sample.docx`. Mỗi dòng dữ liệu là một nhãn; dòng 1 là tiêu đề.
+
+| Cột | Nội dung |
+|-----|----------|
+| A | Hộp số |
+| B | Từ hồ sơ số |
+| C | Đến hồ sơ số |
+| D | Nội dung (mã mục/nhóm, mỗi dòng một mục) |
+| E | Tiêu đề (Phông lưu trữ…) |
+
+## Chạy
 
 ```bash
+# Toàn bộ 3 tab (khuyến nghị)
 uv run server.py
+
+# Sản xuất — gunicorn phục vụ cả 3 tab
+uv run --group deploy gunicorn --workers 1 --threads 8 --bind 0.0.0.0:5019 server:application
 ```
 
-`uv` tự tạo `.venv` đúng nền tảng và cài thư viện theo `pyproject.toml` + `uv.lock`
-ngay lần chạy đầu (chưa có uv? xem https://docs.astral.sh/uv/ hoặc chạy `install.sh`).
-Sau đó mở http://127.0.0.1:8000 (đổi cổng bằng `PORT=5019 uv run server.py`).
+Mở http://127.0.0.1:8000 (dev) hoặc cổng đã cấu hình. Lắng nghe trên `0.0.0.0` nên dùng được trong LAN.
 
-### Chạy riêng từng chương trình (tuỳ chọn)
-
-Mỗi app vẫn chạy độc lập được như cũ:
+Chạy **riêng** từng chương trình (vẫn hoạt động độc lập như cũ):
 
 ```bash
-uv run app.py                       # 📚 bìa hồ sơ      -> http://127.0.0.1:5019
-uv run Phanmem_muclucdang/app.py    # 📑 mục lục văn bản -> http://127.0.0.1:5050
-uv run Innhan/app.py                # 🏷️ in nhãn hộp     -> http://127.0.0.1:5051
+uv run app.py                     # 📚 -> http://127.0.0.1:5019
+uv run Phanmem_muclucdang/app.py  # 📑 -> http://127.0.0.1:5050
+uv run Innhan/app.py              # 🏷️ -> http://127.0.0.1:5051
 ```
 
-## Cài đặt nhanh (tự động) — cho máy chủ/triển khai
+Dòng lệnh (CLI) tạo bìa không cần web:
 
 ```bash
+uv run tao_bia.py --mau Sample.docx --data "du_lieu.xlsx" --out ket_qua.docx
+```
+
+## Cài đặt
+
+```bash
+# Tự động (máy chủ/triển khai): cài uv nếu thiếu, uv sync, tạo service & chạy
 chmod +x install.sh
-./install.sh                # tạo .venv, cài thư viện + gunicorn, tạo service & chạy
-./install.sh --no-service   # chỉ cài thư viện, không tạo service
+./install.sh                # tạo .venv + thư viện + gunicorn, tạo service
+./install.sh --no-service   # chỉ cài môi trường, không tạo service
+
+# Thủ công
+uv sync --group deploy      # .venv + thư viện (+ gunicorn cho triển khai)
 ```
 
-Script tự tạo service:
-- **Linux**: `systemd` (`hoso.service`) — tự khởi động cùng máy.
-- **macOS**: `launchd` (`com.hoso.bia`). Lưu ý: nếu đặt dự án trong `~/Documents`
-  (bị macOS bảo vệ TCC), launchd có thể bị chặn — hãy đặt dự án ngoài `~/Documents`
-  hoặc cấp *Full Disk Access*, hoặc chạy thủ công bằng gunicorn.
-
-Cấu hình qua biến môi trường: `PORT` (mặc định 5019), `HOST` (0.0.0.0),
-`WORKERS` (giữ = 1), `THREADS` (8).
-
-## Cài đặt thủ công
-
-```bash
-uv sync --group deploy      # tạo .venv + cài thư viện (+ gunicorn cho triển khai)
-```
-
-Hoặc dùng pip truyền thống với `requirements.txt` (do uv xuất ra, luôn đồng bộ với `uv.lock`):
+Hoặc dùng pip truyền thống với `requirements.txt` (do uv xuất ra, luôn đồng bộ `uv.lock`):
 
 ```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt gunicorn
 ```
 
-Đặt tệp mẫu `.docx` vào thư mục dự án (mặc định dùng `Sample.docx`).
-Có thể đổi thư mục mẫu bằng biến môi trường `BIA_TEMPLATE_DIR`.
+`install.sh` tạo service tự khởi động:
+- **Linux**: `systemd` (`hoso.service`).
+- **macOS**: `launchd` (`com.hoso.bia`) — nếu đặt dự án trong `~/Documents` (bị macOS bảo vệ
+  TCC) launchd có thể bị chặn; hãy đặt ngoài `~/Documents`, cấp *Full Disk Access*, hoặc
+  chạy gunicorn thủ công.
 
-## Chạy web (trang 3 tab hợp nhất)
+Cấu hình qua biến môi trường: `PORT` (mặc định 5019 khi triển khai / 8000 khi `uv run server.py`),
+`HOST` (0.0.0.0), `WORKERS` (giữ = 1), `THREADS` (8), `BIA_TEMPLATE_DIR` (thư mục chứa tệp mẫu bìa).
 
-```bash
-# Phát triển
-uv run server.py
+## Ghi chú kỹ thuật
 
-# Sản xuất (gunicorn, 1 worker + nhiều thread) — phục vụ cả 3 tab
-uv run --group deploy gunicorn --workers 1 --threads 8 --bind 0.0.0.0:5019 server:application
-```
+> **Vì sao `--workers 1`?** Cả ba chương trình giữ tệp kết quả **tạm trong RAM** của tiến
+> trình theo mã công việc. Nhiều worker sẽ khiến lượt tải rơi vào tiến trình khác (mất kết
+> quả). Cần chịu tải cao hơn thì tăng `--threads`, **đừng** tăng worker.
 
-Mở: http://127.0.0.1:8000 (dev) hoặc cổng đã cấu hình. Lắng nghe trên `0.0.0.0`, dùng được trong LAN.
-
-> **Vì sao `--workers 1`?** File kết quả được giữ tạm trong RAM của tiến trình theo
-> token tải về. Nhiều worker sẽ khiến lượt tải rơi vào tiến trình khác (mất token).
-> Cần chịu tải cao hơn thì tăng `--threads`, đừng tăng worker.
-
-## Chạy dòng lệnh (CLI)
-
-```bash
-uv run tao_bia.py --mau Sample.docx --data "du_lieu.xlsx" --out ket_qua.docx
-```
+- `server.py` dùng `DispatcherMiddleware` mount 3 app dưới `/bia`, `/mucluc`, `/nhan`. Phần
+  JavaScript mỗi app gọi API theo tiền tố `BASE` lấy từ `location.pathname`, nên chạy đúng cả
+  khi gộp lẫn khi chạy độc lập.
+- Tệp mẫu `.docx`: **bìa** dùng `Sample.docx` ở thư mục gốc (đổi bằng `BIA_TEMPLATE_DIR`);
+  **nhãn** dùng `Innhan/sample.docx`; **mục lục** dựng bằng code (không cần tệp mẫu).
 
 ## Tệp chính
 
-- `server.py` — **máy chủ hợp nhất**: gộp 3 app thành một trang 3 tab (`server:application`).
-- `pyproject.toml` / `uv.lock` — khai báo & khoá phiên bản thư viện cho uv.
+- `server.py` — máy chủ hợp nhất (`server:application`), trang 3 tab.
+- `pyproject.toml` / `uv.lock` / `.python-version` — khai báo & khoá thư viện cho uv.
 - `app.py` + `tao_bia.py` — 📚 Tạo bìa hồ sơ (web + CLI).
 - `Phanmem_muclucdang/app.py` + `muc_luc.py` — 📑 Mục lục văn bản.
 - `Innhan/app.py` + `in_nhan.py` — 🏷️ In nhãn hộp.
+- `install.sh` — cài đặt & tạo service; `deploy/nginx/` — cấu hình reverse proxy.
