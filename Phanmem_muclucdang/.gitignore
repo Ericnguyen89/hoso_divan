@@ -1,0 +1,28 @@
+# Bytecode / cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Môi trường ảo Python
+.venv/
+venv/
+env/
+
+# Dữ liệu đầu vào (Excel) - không đẩy dữ liệu thật lên repo
+*.xlsx
+*.xlsm
+
+# Kết quả sinh ra
+out/
+out_test/
+MLVB_*.docx
+Muc_luc_van_ban_*.zip
+
+# Log
+*.log
+
+# Hệ điều hành / IDE
+.DS_Store
+.idea/
+.vscode/
+*.swp
