@@ -25,15 +25,28 @@ Giữ nguyên font, khung viền và bố cục của tệp mẫu; mỗi dòng d
 | F | Thời hạn bảo quản |
 | G | Dòng phông (đầu bìa) |
 
-## Chạy ngay, KHÔNG cần venv
+## Chạy toàn bộ (3 tab) với uv — khuyến nghị
+
+Dự án gộp **3 chương trình** vào một trang duy nhất với 3 tab (`server.py`):
+📚 Tạo bìa hồ sơ · 📑 Mục lục văn bản · 🏷️ In nhãn hộp.
 
 ```bash
-python3 app.py
+uv run server.py
 ```
 
-Lần đầu nếu thiếu thư viện, `app.py` **tự cài** (flask, python-docx, openpyxl, lxml)
-bằng đúng Python đang chạy rồi tự nạp lại — không cần tạo/kích hoạt môi trường ảo.
-Sau đó mở http://127.0.0.1:5019
+`uv` tự tạo `.venv` đúng nền tảng và cài thư viện theo `pyproject.toml` + `uv.lock`
+ngay lần chạy đầu (chưa có uv? xem https://docs.astral.sh/uv/ hoặc chạy `install.sh`).
+Sau đó mở http://127.0.0.1:8000 (đổi cổng bằng `PORT=5019 uv run server.py`).
+
+### Chạy riêng từng chương trình (tuỳ chọn)
+
+Mỗi app vẫn chạy độc lập được như cũ:
+
+```bash
+uv run app.py                       # 📚 bìa hồ sơ      -> http://127.0.0.1:5019
+uv run Phanmem_muclucdang/app.py    # 📑 mục lục văn bản -> http://127.0.0.1:5050
+uv run Innhan/app.py                # 🏷️ in nhãn hộp     -> http://127.0.0.1:5051
+```
 
 ## Cài đặt nhanh (tự động) — cho máy chủ/triển khai
 
@@ -55,6 +68,12 @@ Cấu hình qua biến môi trường: `PORT` (mặc định 5019), `HOST` (0.0.
 ## Cài đặt thủ công
 
 ```bash
+uv sync --group deploy      # tạo .venv + cài thư viện (+ gunicorn cho triển khai)
+```
+
+Hoặc dùng pip truyền thống với `requirements.txt` (do uv xuất ra, luôn đồng bộ với `uv.lock`):
+
+```bash
 python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt gunicorn
 ```
@@ -62,17 +81,17 @@ python3 -m venv .venv
 Đặt tệp mẫu `.docx` vào thư mục dự án (mặc định dùng `Sample.docx`).
 Có thể đổi thư mục mẫu bằng biến môi trường `BIA_TEMPLATE_DIR`.
 
-## Chạy web
+## Chạy web (trang 3 tab hợp nhất)
 
 ```bash
-# Phát triển (Flask dev server)
-.venv/bin/python app.py
+# Phát triển
+uv run server.py
 
-# Sản xuất (gunicorn, 1 worker + nhiều thread)
-.venv/bin/gunicorn --workers 1 --threads 8 --bind 0.0.0.0:5019 app:app
+# Sản xuất (gunicorn, 1 worker + nhiều thread) — phục vụ cả 3 tab
+uv run --group deploy gunicorn --workers 1 --threads 8 --bind 0.0.0.0:5019 server:application
 ```
 
-Mở: http://127.0.0.1:5019 (lắng nghe trên `0.0.0.0`, dùng được trong LAN).
+Mở: http://127.0.0.1:8000 (dev) hoặc cổng đã cấu hình. Lắng nghe trên `0.0.0.0`, dùng được trong LAN.
 
 > **Vì sao `--workers 1`?** File kết quả được giữ tạm trong RAM của tiến trình theo
 > token tải về. Nhiều worker sẽ khiến lượt tải rơi vào tiến trình khác (mất token).
@@ -81,10 +100,13 @@ Mở: http://127.0.0.1:5019 (lắng nghe trên `0.0.0.0`, dùng được trong L
 ## Chạy dòng lệnh (CLI)
 
 ```bash
-.venv/bin/python tao_bia.py --mau Sample.docx --data "du_lieu.xlsx" --out ket_qua.docx
+uv run tao_bia.py --mau Sample.docx --data "du_lieu.xlsx" --out ket_qua.docx
 ```
 
 ## Tệp chính
 
-- `app.py` — máy chủ Flask (giao diện web).
-- `tao_bia.py` — lõi xử lý (đọc Excel, dựng docx); dùng được cả CLI lẫn web.
+- `server.py` — **máy chủ hợp nhất**: gộp 3 app thành một trang 3 tab (`server:application`).
+- `pyproject.toml` / `uv.lock` — khai báo & khoá phiên bản thư viện cho uv.
+- `app.py` + `tao_bia.py` — 📚 Tạo bìa hồ sơ (web + CLI).
+- `Phanmem_muclucdang/app.py` + `muc_luc.py` — 📑 Mục lục văn bản.
+- `Innhan/app.py` + `in_nhan.py` — 🏷️ In nhãn hộp.

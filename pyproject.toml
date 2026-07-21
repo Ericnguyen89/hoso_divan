@@ -1,0 +1,24 @@
+[project]
+name = "hoso-luutru"
+version = "0.1.0"
+description = "Bộ công cụ lưu trữ — gộp 3 chương trình Flask vào một trang (3 tab)"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "flask>=3.1.3",
+    "python-docx>=1.2.0",
+    "openpyxl>=3.1.5",
+    "lxml>=6.1.1",
+]
+
+# Nhóm phụ thuộc chỉ dùng khi triển khai (gunicorn). Cài kèm bằng:
+#   uv sync --group deploy
+[dependency-groups]
+deploy = [
+    "gunicorn>=21.2.0",
+]
+
+# Đây là dự án dạng "ứng dụng" (nhiều tệp app.py + server.py), KHÔNG phải thư
+# viện để đóng gói/cài đặt -> báo uv chỉ cài phụ thuộc, không build dự án.
+[tool.uv]
+package = false

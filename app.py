@@ -444,6 +444,8 @@ PAGE = r"""
 
 <script>
 const $=s=>document.querySelector(s);
+// Tiền tố đường dẫn: chạy độc lập -> "", khi gộp mount tại /bia -> "/bia".
+const BASE=location.pathname.replace(/\/+$/,"");
 const fileInput=$("#fileData"), drop=$("#dropData");
 let selected=[];          // danh sách File đang chọn
 let statuses=[];          // trạng thái hiển thị song song với selected
@@ -515,7 +517,7 @@ function setProgress(p,text){
 async function poll(jobId){
   while(true){
     let d;
-    try{ d=await (await fetch("/jobs/"+jobId)).json(); }
+    try{ d=await (await fetch(BASE+"/jobs/"+jobId)).json(); }
     catch(_){ await sleep(600); continue; }
     if(!d.ok){ toast(d.error||"Mất công việc",true); return false; }
 
@@ -543,7 +545,7 @@ async function poll(jobId){
         $("#dlInfo").textContent=d.ok_count+" tệp • "+total+" bìa"
           +(d.download_kind==="zip"?" • đóng gói ZIP":"")
           +(errs.length?(" • "+errs.length+" tệp lỗi"):"");
-        $("#dlLink").href="/jobs/"+jobId+"/download";
+        $("#dlLink").href=BASE+"/jobs/"+jobId+"/download";
         $("#dlcard").style.display="flex";
         toast("Đã tạo xong "+total+" bìa ✔");
       } else { toast("Không tạo được tệp nào",true); }
@@ -573,7 +575,7 @@ $("#btnGen").addEventListener("click",async()=>{
     selected.forEach(f=>fd.append("data",f));
     fd.append("phong_so", $("#phongSo").value.trim());
     fd.append("muc_luc", $("#mucLuc").value.trim());
-    const res=await fetch("/jobs",{method:"POST",body:fd});
+    const res=await fetch(BASE+"/jobs",{method:"POST",body:fd});
     const d=await res.json();
     if(!d.ok){ toast(d.error,true); }
     else {

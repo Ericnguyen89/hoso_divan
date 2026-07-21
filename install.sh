@@ -19,7 +19,7 @@ HOST="${HOST:-0.0.0.0}"
 WORKERS="${WORKERS:-1}"        # GIỮ =1: file kết quả lưu trong RAM của 1 tiến trình
 THREADS="${THREADS:-8}"
 SERVICE_NAME="hoso"
-APP_MODULE="app:app"          # đối tượng Flask `app` trong app.py
+APP_MODULE="server:application"   # app WSGI hợp nhất (3 tab) trong server.py
 
 # Thư mục chứa script này (= thư mục dự án)
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -35,27 +35,30 @@ ok()   { printf "\033[1;32m✓\033[0m %s\n" "$*"; }
 warn() { printf "\033[1;33m!\033[0m %s\n" "$*"; }
 die()  { printf "\033[1;31m✗ %s\033[0m\n" "$*" >&2; exit 1; }
 
-# --------------------------- 1) Python + venv --------------------------------
-PYTHON3="$(command -v python3 || true)"
-[ -n "$PYTHON3" ] || die "Chưa có python3. Hãy cài Python 3.9+ trước."
-say "Dùng Python: $($PYTHON3 --version)"
-
-if [ ! -d "$VENV" ]; then
-  say "Tạo môi trường ảo tại .venv"
-  "$PYTHON3" -m venv "$VENV"
-else
-  say "Đã có .venv — dùng lại"
+# --------------------------- 1) uv + môi trường ------------------------------
+# Cài uv nếu chưa có (trình quản lý gói/môi trường Python siêu nhanh của Astral).
+UV="$(command -v uv || true)"
+[ -z "$UV" ] && [ -x "$HOME/.local/bin/uv" ] && UV="$HOME/.local/bin/uv"
+if [ -z "$UV" ]; then
+  say "Chưa có uv — đang cài đặt uv…"
+  if command -v curl >/dev/null 2>&1; then
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+  elif command -v wget >/dev/null 2>&1; then
+    wget -qO- https://astral.sh/uv/install.sh | sh
+  else
+    die "Cần curl hoặc wget để cài uv. Hãy cài uv thủ công: https://docs.astral.sh/uv/"
+  fi
+  export PATH="$HOME/.local/bin:$PATH"
+  UV="$(command -v uv || echo "$HOME/.local/bin/uv")"
 fi
+[ -x "$UV" ] || command -v uv >/dev/null 2>&1 || die "Không tìm thấy uv sau khi cài."
+say "Dùng uv: $("$UV" --version)"
 
-say "Nâng cấp pip và cài thư viện"
-"$PY_BIN" -m pip install --quiet --upgrade pip
-if [ -f "$APP_DIR/requirements.txt" ]; then
-  "$PY_BIN" -m pip install --quiet -r "$APP_DIR/requirements.txt"
-else
-  "$PY_BIN" -m pip install --quiet flask python-docx openpyxl lxml
-fi
-"$PY_BIN" -m pip install --quiet gunicorn
-ok "Đã cài thư viện + gunicorn"
+# uv tự tạo .venv (đúng nền tảng), cài thư viện theo pyproject.toml + uv.lock,
+# kèm nhóm 'deploy' để có gunicorn. Chạy trong thư mục dự án.
+say "Tạo môi trường & cài thư viện (uv sync --group deploy)"
+( cd "$APP_DIR" && "$UV" sync --group deploy )
+ok "Đã tạo .venv + cài thư viện + gunicorn"
 
 # Kiểm tra import nhanh
 "$PY_BIN" - <<'PY'
@@ -65,7 +68,9 @@ PY
 
 if [ "$MAKE_SERVICE" -eq 0 ]; then
   ok "Hoàn tất (bỏ qua tạo service)."
-  echo "Chạy thủ công:  $GUNICORN --workers $WORKERS --threads $THREADS --bind $HOST:$PORT $APP_MODULE"
+  echo "Chạy nhanh (dev):  uv run server.py"
+  echo "Chạy sản xuất  :  $GUNICORN --workers $WORKERS --threads $THREADS --bind $HOST:$PORT $APP_MODULE"
+  echo "               (hoặc: uv run --group deploy gunicorn --bind $HOST:$PORT $APP_MODULE)"
   exit 0
 fi
 
