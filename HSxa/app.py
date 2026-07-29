@@ -262,7 +262,7 @@ PAGE = r"""
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tạo bìa hồ sơ lưu trữ</title>
+<title>Tạo bìa hồ sơ lưu trữ Dự án Xã</title>
 <style>
   :root{
     --bg1:#0f172a; --bg2:#1e293b;
@@ -387,14 +387,14 @@ PAGE = r"""
 <div class="wrap">
   <header>
     <span class="badge">📚 Lưu trữ • Tự động hóa</span>
-    <h1>Tạo bìa hồ sơ hàng loạt</h1>
+    <h1>Tạo bìa hồ sơ Xã</h1>
     <p>Chọn một hoặc nhiều tệp Excel (.xlsx) — hệ thống xử lý tuần tự, xuất bìa A4 cho mỗi hồ sơ.</p>
   </header>
 
   <div class="card">
     <label class="drop" id="dropData">
       <div class="ico">📊</div>
-      <div class="t">Chọn tệp Excel (.xlsx) — có thể chọn nhiều</div>
+      <div class="t">Chọn tệp Excel (.xlsx) để xử lý — có thể chọn nhiều</div>
       <div class="s">Kéo thả vào đây hoặc bấm để chọn từ máy</div>
       <div class="fname" id="nameData"></div>
       <input type="file" id="fileData" accept=".xlsx,.xlsm" multiple>

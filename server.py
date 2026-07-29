@@ -3,11 +3,11 @@
 Máy chủ HỢP NHẤT: gộp 4 chương trình Flask vào MỘT trang duy nhất, hiển thị
 bằng 4 tab. Bấm vào từng tab để chuyển giữa các chương trình.
 
-    /            -> trang vỏ (shell) có 4 tab
+    /            -> trang vỏ (shell) có 4 tab (mặc định mở /hsxa/)
+    /hsxa/...    -> 📂 Tạo bìa hồ sơ xã          (HSxa/app.py)
     /bia/...     -> 📚 Tạo bìa hồ sơ            (app.py ở thư mục gốc)
     /mucluc/...  -> 📑 Mục lục văn bản, tài liệu (Phanmem_muclucdang/app.py)
     /nhan/...    -> 🏷️ In nhãn hộp lưu trữ       (Innhan/app.py)
-    /hsxa/...    -> 📂 Tạo bìa hồ sơ xã          (HSxa/app.py)
 
 Mỗi chương trình con vẫn giữ NGUYÊN toàn bộ logic và vẫn chạy độc lập được
 như cũ (python3 app.py trong từng thư mục).
@@ -144,10 +144,10 @@ SHELL_PAGE = r"""
       <span class="s">— 4 chương trình trong một trang</span>
     </div>
     <div class="tabs" id="tabs">
-      <button class="tab bia active"    data-key="bia"    data-src="/bia/"><span class="ico">📚</span>Tạo bìa hồ sơ</button>
+      <button class="tab hsxa active"   data-key="hsxa"   data-src="/hsxa/"><span class="ico">📂</span>Tạo bìa hồ sơ xã</button>
+      <button class="tab bia"           data-key="bia"    data-src="/bia/"><span class="ico">📚</span>Tạo bìa hồ sơ</button>
       <button class="tab mucluc"        data-key="mucluc" data-src="/mucluc/"><span class="ico">📑</span>Mục lục văn bản</button>
       <button class="tab nhan"          data-key="nhan"   data-src="/nhan/"><span class="ico">🏷️</span>In nhãn hộp</button>
-      <button class="tab hsxa"          data-key="hsxa"   data-src="/hsxa/"><span class="ico">📂</span>Tạo bìa hồ sơ xã</button>
     </div>
   </div>
 
@@ -180,7 +180,7 @@ SHELL_PAGE = r"""
   }
 
   tabs.forEach(t => t.addEventListener("click", () => activate(t.dataset.key)));
-  activate("bia");   // tab mặc định
+  activate("hsxa");   // tab mặc định
 </script>
 </body>
 </html>
