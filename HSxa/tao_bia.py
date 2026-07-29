@@ -143,6 +143,22 @@ def set_paragraph_text(p, text, fallback_rpr):
     add_run(p, rpr if rpr is not None else fallback_rpr, text)
 
 
+def insert_blank_paragraph_before(p, ppr_source=None):
+    """Chèn 1 đoạn TRỐNG (không có run) ngay TRƯỚC đoạn p, sao chép định
+    dạng đoạn (pPr) từ ppr_source (mặc định lấy của chính p) - dùng để đẩy
+    khối nội dung phía dưới xuống thấp hơn một chút trong khung.
+
+    Lưu ý: pPr của bản thân p có thể mang cỡ chữ RẤT lớn (vd đoạn "HỒ SƠ"
+    dùng cỡ 75pt cho nhãn tiêu đề) - nếu sao chép nguyên, dòng trống mới sẽ
+    cao bất thường. Nên truyền ppr_source là 1 đoạn trống có sẵn gần đó
+    (cỡ chữ vừa phải) để chỉ đẩy xuống "một chút" thay vì nhảy cỡ lớn."""
+    new_p = etree.Element(w("p"))
+    ppr = (ppr_source if ppr_source is not None else p).find(w("pPr"))
+    if ppr is not None:
+        new_p.append(copy.deepcopy(ppr))
+    p.addprevious(new_p)
+
+
 def find_paragraph(txbx, pred):
     """Đoạn ĐẦU TIÊN trong text box có văn bản thỏa `pred(text)`."""
     for p in txbx.findall(w("p")):
@@ -262,8 +278,14 @@ def fill_textbox(txbx, row, phong_so=None, muc_luc=None):
             break
 
     # --- Trích yếu nội dung: đoạn ngay sau nhãn "HỒ SƠ" ---
+    # Chèn thêm 1 dòng trống ngay trước nhãn "HỒ SƠ" để cả khối (HỒ SƠ +
+    # trích yếu + các dòng bên dưới) dịch xuống một chút, tránh dồn sát lên
+    # đầu khung như trước. Lấy cỡ chữ từ đoạn trống sẵn có ngay phía trên
+    # (không phải từ chính đoạn "HỒ SƠ", vốn cỡ chữ rất lớn).
     for i, t in enumerate(texts):
         if t.strip() == "HỒ SƠ" and i + 1 < len(paras):
+            insert_blank_paragraph_before(
+                paras[i], paras[i - 1] if i > 0 else None)
             set_paragraph_text(paras[i + 1], row["title"], FALLBACK_RPR_TITLE)
             break
 
