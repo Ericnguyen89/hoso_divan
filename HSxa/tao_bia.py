@@ -133,6 +133,19 @@ def first_bold_run_rpr(p):
     return None
 
 
+def strip_bold_rpr(rpr):
+    """Sao chép rpr, bỏ định dạng ĐẬM - dùng khi cả đoạn mẫu vốn toàn chữ
+    đậm nhưng cần in giá trị bằng chữ THƯỜNG (vd ngày tháng, số tờ)."""
+    if rpr is None:
+        return None
+    new_rpr = copy.deepcopy(rpr)
+    for tag in (w("b"), w("bCs")):
+        el = new_rpr.find(tag)
+        if el is not None:
+            new_rpr.remove(el)
+    return new_rpr
+
+
 def set_paragraph_text(p, text, fallback_rpr):
     """Đặt lại TOÀN BỘ văn bản của đoạn p bằng 1 run duy nhất. Giữ định
     dạng (rPr) của run đầu tiên nếu đoạn đã có sẵn chữ (mẫu điền ví dụ như
@@ -290,15 +303,21 @@ def fill_textbox(txbx, row, phong_so=None, muc_luc=None):
             break
 
     # --- Ngày bắt đầu / kết thúc: đoạn "Từ ngày: ... Đến ngày: ..." ---
+    # Nhãn giữ định dạng gốc của mẫu (đậm); riêng giá trị ngày tháng in
+    # THƯỜNG dù mẫu để cả đoạn đậm.
     p_date = find_paragraph(
         txbx, lambda t: "Từ" in t and "ngày" in t and "Đến" in t)
     if p_date is not None:
-        rpr = first_run_rpr(p_date)
+        rpr_label = first_run_rpr(p_date)
+        rpr_value = strip_bold_rpr(rpr_label)
         clear_paragraph_runs(p_date)
-        add_run(p_date, rpr,
-               "Từ ngày: %s    Đến ngày: %s" % (row["start"], row["end"]))
+        add_run(p_date, rpr_label, "Từ ngày: ")
+        add_run(p_date, rpr_value, row["start"])
+        add_run(p_date, rpr_label, "    Đến ngày: ")
+        add_run(p_date, rpr_value, row["end"])
 
     # --- Số tờ: đoạn "Gồm:  NN tờ " ---
+    # Số tờ in đậm; chữ "tờ" in THƯỜNG.
     p_gom = find_paragraph(txbx, lambda t: t.strip().startswith("Gồm"))
     if p_gom is not None:
         rpr_label = first_run_rpr(p_gom)
@@ -307,7 +326,8 @@ def fill_textbox(txbx, row, phong_so=None, muc_luc=None):
             rpr_bold = rpr_label
         clear_paragraph_runs(p_gom)
         add_run(p_gom, rpr_label, "Gồm:  ")
-        add_run(p_gom, rpr_bold, "%s tờ " % row["so_to"])
+        add_run(p_gom, rpr_bold, "%s" % row["so_to"])
+        add_run(p_gom, rpr_label, " tờ ")
 
     # --- Phông số / Mục lục số / Thời hạn bảo quản / Hồ sơ số ---
     # (nhãn + dấu TAB canh cột - giữ cơ chế set_field_before/after_tab)
