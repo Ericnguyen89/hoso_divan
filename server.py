@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 """
-Máy chủ HỢP NHẤT: gộp 3 chương trình Flask vào MỘT trang duy nhất, hiển thị
-bằng 3 tab. Bấm vào từng tab để chuyển giữa các chương trình.
+Máy chủ HỢP NHẤT: gộp 4 chương trình Flask vào MỘT trang duy nhất, hiển thị
+bằng 4 tab. Bấm vào từng tab để chuyển giữa các chương trình.
 
-    /            -> trang vỏ (shell) có 3 tab
+    /            -> trang vỏ (shell) có 4 tab
     /bia/...     -> 📚 Tạo bìa hồ sơ            (app.py ở thư mục gốc)
     /mucluc/...  -> 📑 Mục lục văn bản, tài liệu (Phanmem_muclucdang/app.py)
     /nhan/...    -> 🏷️ In nhãn hộp lưu trữ       (Innhan/app.py)
+    /hsxa/...    -> 📂 Tạo bìa hồ sơ xã          (HSxa/app.py)
 
 Mỗi chương trình con vẫn giữ NGUYÊN toàn bộ logic và vẫn chạy độc lập được
 như cũ (python3 app.py trong từng thư mục).
@@ -29,34 +30,62 @@ from werkzeug.middleware.dispatcher import DispatcherMiddleware
 ROOT = os.path.dirname(os.path.abspath(__file__))
 MUCLUC_DIR = os.path.join(ROOT, "Phanmem_muclucdang")
 NHAN_DIR = os.path.join(ROOT, "Innhan")
+HSXA_DIR = os.path.join(ROOT, "HSxa")
 
 # Đưa từng thư mục vào sys.path để mỗi app con nạp được module riêng của nó
 # (tao_bia / muc_luc / in_nhan) và tìm đúng tệp mẫu .docx cạnh nó.
-for d in (ROOT, MUCLUC_DIR, NHAN_DIR):
+for d in (ROOT, MUCLUC_DIR, NHAN_DIR, HSXA_DIR):
     if d not in sys.path:
         sys.path.insert(0, d)
 
 
-def _load_flask_app(path, module_name):
+def _load_flask_app(path, module_name, shadow=None):
     """Nạp một tệp app.py và trả về đối tượng Flask `app` bên trong.
 
-    Dùng tên module riêng biệt để 3 tệp app.py (trùng tên) không đè lên nhau.
+    Dùng tên module riêng biệt để các tệp app.py (trùng tên) không đè lên nhau.
     Nhờ import theo đường dẫn thật, biến __file__ của mỗi app trỏ đúng thư mục
     của nó, nên phần dò tệp mẫu .docx (theo __file__) vẫn chính xác.
+
+    shadow: dict {tên_module: đường_dẫn.py} cho các module con mà app.py tự
+    "import tên_module" (vd bia_app và hsxa_app đều "import tao_bia" nhưng
+    mỗi thư mục có một bản tao_bia.py khác nhau). Nếu không xử lý, bản nạp
+    trước sẽ bị cache trong sys.modules và bản sau "import" nhầm phải nó.
+    Ở đây ta nạp đúng bản theo đường dẫn, đặt tạm vào sys.modules trong lúc
+    exec_module rồi khôi phục lại như cũ ngay sau đó.
     """
-    spec = importlib.util.spec_from_file_location(module_name, path)
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[module_name] = module
-    spec.loader.exec_module(module)
-    return module.app
+    saved = {}
+    if shadow:
+        for name, subpath in shadow.items():
+            saved[name] = sys.modules.get(name)
+            sub_spec = importlib.util.spec_from_file_location(
+                module_name + "__" + name, subpath)
+            sub_module = importlib.util.module_from_spec(sub_spec)
+            sub_spec.loader.exec_module(sub_module)
+            sys.modules[name] = sub_module
+
+    try:
+        spec = importlib.util.spec_from_file_location(module_name, path)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        spec.loader.exec_module(module)
+        return module.app
+    finally:
+        for name, prev in saved.items():
+            if prev is None:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = prev
 
 
-bia_app = _load_flask_app(os.path.join(ROOT, "app.py"), "bia_app_module")
+bia_app = _load_flask_app(os.path.join(ROOT, "app.py"), "bia_app_module",
+                           shadow={"tao_bia": os.path.join(ROOT, "tao_bia.py")})
 mucluc_app = _load_flask_app(os.path.join(MUCLUC_DIR, "app.py"), "mucluc_app_module")
 nhan_app = _load_flask_app(os.path.join(NHAN_DIR, "app.py"), "nhan_app_module")
+hsxa_app = _load_flask_app(os.path.join(HSXA_DIR, "app.py"), "hsxa_app_module",
+                            shadow={"tao_bia": os.path.join(HSXA_DIR, "tao_bia.py")})
 
 
-# --------------------------- Trang vỏ (3 tab) --------------------------------
+# --------------------------- Trang vỏ (4 tab) --------------------------------
 shell = Flask("shell")
 
 SHELL_PAGE = r"""
@@ -96,6 +125,8 @@ SHELL_PAGE = r"""
        box-shadow:0 -3px 0 #0ea5e9 inset;}
   .tab.active.nhan{background:linear-gradient(180deg,#dcfce7,#fff);color:#047857;
        box-shadow:0 -3px 0 #059669 inset;}
+  .tab.active.hsxa{background:linear-gradient(180deg,#fef3c7,#fff);color:#b45309;
+       box-shadow:0 -3px 0 #d97706 inset;}
 
   .stage{flex:1 1 auto;background:#fff;position:relative;overflow:hidden;}
   .frame{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;}
@@ -110,12 +141,13 @@ SHELL_PAGE = r"""
     <div class="brand">
       <span class="dot">🗄️</span>
       <span class="t">Bộ công cụ lưu trữ</span>
-      <span class="s">— 3 chương trình trong một trang</span>
+      <span class="s">— 4 chương trình trong một trang</span>
     </div>
     <div class="tabs" id="tabs">
       <button class="tab bia active"    data-key="bia"    data-src="/bia/"><span class="ico">📚</span>Tạo bìa hồ sơ</button>
       <button class="tab mucluc"        data-key="mucluc" data-src="/mucluc/"><span class="ico">📑</span>Mục lục văn bản</button>
       <button class="tab nhan"          data-key="nhan"   data-src="/nhan/"><span class="ico">🏷️</span>In nhãn hộp</button>
+      <button class="tab hsxa"          data-key="hsxa"   data-src="/hsxa/"><span class="ico">📂</span>Tạo bìa hồ sơ xã</button>
     </div>
   </div>
 
@@ -160,11 +192,12 @@ def home():
     return render_template_string(SHELL_PAGE)
 
 
-# App WSGI hợp nhất: mặc định là trang vỏ, 3 tiền tố dẫn tới 3 app con.
+# App WSGI hợp nhất: mặc định là trang vỏ, 4 tiền tố dẫn tới 4 app con.
 application = DispatcherMiddleware(shell, {
     "/bia": bia_app,
     "/mucluc": mucluc_app,
     "/nhan": nhan_app,
+    "/hsxa": hsxa_app,
 })
 
 
