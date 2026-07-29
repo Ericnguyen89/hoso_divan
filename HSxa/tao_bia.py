@@ -284,8 +284,8 @@ def fill_textbox(txbx, row, phong_so=None, muc_luc=None):
         if rpr_bold is None:
             rpr_bold = rpr_label
         clear_paragraph_runs(p_gom)
-        add_run(p_gom, rpr_label, "Gồm:  %s " % row["so_to"])
-        add_run(p_gom, rpr_bold, "tờ ")
+        add_run(p_gom, rpr_label, "Gồm:  ")
+        add_run(p_gom, rpr_bold, "%s tờ " % row["so_to"])
 
     # --- Phông số / Mục lục số / Thời hạn bảo quản / Hồ sơ số ---
     # (nhãn + dấu TAB canh cột - giữ cơ chế set_field_before/after_tab)

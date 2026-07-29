@@ -187,7 +187,8 @@ def create_job():
             files.append((f.filename, f.read()))
         if not files:
             raise ValueError("Vui lòng chọn ít nhất một tệp Excel (.xlsx).")
-        # Phông số / Mục lục số do người dùng nhập (mặc định 001 / 01)
+        # Phông số / Mục lục số: đọc từ cột A/B Excel; đây chỉ là giá trị dự
+        # phòng khi một dòng bỏ trống cột đó (giao diện không cho nhập nữa).
         phong_so = (request.form.get("phong_so") or "").strip() or "001"
         muc_luc = (request.form.get("muc_luc") or "").strip() or "01"
         template_bytes = _template_bytes()  # lỗi mẫu sẽ báo ngay tại đây
@@ -402,14 +403,6 @@ PAGE = r"""
     <div class="files" id="files"></div>
 
     <div class="toolbar">
-      <div class="field">
-        <label for="phongSo">Phông số (mặc định)</label>
-        <input id="phongSo" type="text" value="001" placeholder="001" autocomplete="off">
-      </div>
-      <div class="field">
-        <label for="mucLuc">Mục lục số (mặc định)</label>
-        <input id="mucLuc" type="text" value="01" placeholder="01" autocomplete="off">
-      </div>
       <button class="btn-primary" id="btnGen">
         <span class="spin" id="spinGen"></span>✨ Tạo bìa &amp; tải về
       </button>
@@ -421,8 +414,6 @@ PAGE = r"""
       <b>A</b>=Phông số · <b>B</b>=Mục lục số · <b>C</b>=Hồ sơ số ·
       <b>D</b>=Trích yếu nội dung · <b>E</b>=Ngày tháng bắt đầu, kết thúc ·
       <b>F</b>=Số tờ · <b>G</b>=Thời hạn bảo quản · <b>H</b>=Tên phông (đầu bìa).
-      <br>Ô "Phông số"/"Mục lục số" phía trên chỉ dùng khi dòng Excel bỏ trống
-      cột A/B tương ứng.
     </div>
 
     <div class="progress" id="progress">
@@ -579,8 +570,6 @@ $("#btnGen").addEventListener("click",async()=>{
   try{
     const fd=new FormData();
     selected.forEach(f=>fd.append("data",f));
-    fd.append("phong_so", $("#phongSo").value.trim());
-    fd.append("muc_luc", $("#mucLuc").value.trim());
     const res=await fetch(BASE+"/jobs",{method:"POST",body:fd});
     const d=await res.json();
     if(!d.ok){ toast(d.error,true); }
