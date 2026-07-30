@@ -7,7 +7,7 @@ bằng 4 tab. Bấm vào từng tab để chuyển giữa các chương trình.
     /hsxa/...    -> 📂 Tạo bìa hồ sơ xã          (HSxa/app.py)
     /bia/...     -> 📚 Tạo bìa hồ sơ            (app.py ở thư mục gốc)
     /mucluc/...  -> 📑 Mục lục văn bản, tài liệu (Phanmem_muclucdang/app.py)
-    /nhan/...    -> 🏷️ In nhãn hộp lưu trữ       (Innhan/app.py)
+    /nhan/...    -> 🏷️ In nhãn hộp lưu trữ xã    (Innhan_xa/app.py)
 
 Mỗi chương trình con vẫn giữ NGUYÊN toàn bộ logic và vẫn chạy độc lập được
 như cũ (python3 app.py trong từng thư mục).
@@ -29,7 +29,7 @@ from werkzeug.middleware.dispatcher import DispatcherMiddleware
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 MUCLUC_DIR = os.path.join(ROOT, "Phanmem_muclucdang")
-NHAN_DIR = os.path.join(ROOT, "Innhan")
+NHAN_DIR = os.path.join(ROOT, "Innhan_xa")
 HSXA_DIR = os.path.join(ROOT, "HSxa")
 
 # Đưa từng thư mục vào sys.path để mỗi app con nạp được module riêng của nó
@@ -147,7 +147,7 @@ SHELL_PAGE = r"""
       <button class="tab hsxa active"   data-key="hsxa"   data-src="/hsxa/"><span class="ico">📂</span>Tạo bìa hồ sơ xã</button>
       <button class="tab bia"           data-key="bia"    data-src="/bia/"><span class="ico">📚</span>Tạo bìa hồ sơ</button>
       <button class="tab mucluc"        data-key="mucluc" data-src="/mucluc/"><span class="ico">📑</span>Mục lục văn bản</button>
-      <button class="tab nhan"          data-key="nhan"   data-src="/nhan/"><span class="ico">🏷️</span>In nhãn hộp</button>
+      <button class="tab nhan"          data-key="nhan"   data-src="/nhan/"><span class="ico">🏷️</span>In nhãn hộp xã</button>
     </div>
   </div>
 

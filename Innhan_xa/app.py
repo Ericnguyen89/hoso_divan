@@ -305,9 +305,10 @@ PAGE = r"""
     </div>
 
     <div class="hint">
-      Cấu trúc Excel mỗi sheet (dòng 1 là tiêu đề): <b>A</b>=Hộp số · <b>B</b>=Từ hồ sơ số ·
-      <b>C</b>=Đến hồ sơ số · <b>D</b>=Nội dung (mã mục/nhóm, mỗi dòng một mục) ·
-      <b>E</b>=Tiêu đề (Phông lưu trữ…). Mỗi dòng dữ liệu = một nhãn.
+      Cấu trúc Excel mỗi sheet: <b>Số hộp</b> · <b>Từ Hồ sơ</b> · <b>Đến Hồ sơ</b> ·
+      <b>Số lượng hồ sơ</b> · <b>Tên phông</b> · <b>Năm</b>. Mỗi dòng dữ liệu = một nhãn.<br>
+      Dòng 1 là <b>tiêu đề cột</b> — chương trình đọc theo tên cột nên thứ tự cột đặt
+      thế nào cũng được, thừa cột cũng không sao.
     </div>
 
     <div class="progress" id="progress">
@@ -401,5 +402,5 @@ if __name__ == "__main__":
         ip = socket.gethostbyname(socket.gethostname())
     except Exception:
         ip = "127.0.0.1"
-    print("Truy cập:  http://127.0.0.1:5051   |   http://%s:5051" % ip)
-    app.run(host="0.0.0.0", port=5051, debug=False, threaded=True)
+    print("Truy cập:  http://127.0.0.1:5050   |   http://%s:5050" % ip)
+    app.run(host="0.0.0.0", port=5050, debug=False, threaded=True)
