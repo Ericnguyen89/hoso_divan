@@ -19,7 +19,7 @@ HOST="${HOST:-0.0.0.0}"
 WORKERS="${WORKERS:-1}"        # GIỮ =1: file kết quả lưu trong RAM của 1 tiến trình
 THREADS="${THREADS:-8}"
 SERVICE_NAME="hoso"
-APP_MODULE="server:application"   # app WSGI hợp nhất (3 tab) trong server.py
+APP_MODULE="server:application"   # app WSGI hợp nhất (5 tab) trong server.py
 
 # Thư mục chứa script này (= thư mục dự án)
 APP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
