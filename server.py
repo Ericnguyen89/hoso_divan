@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 """
-Máy chủ HỢP NHẤT: gộp 4 chương trình Flask vào MỘT trang duy nhất, hiển thị
-bằng 4 tab. Bấm vào từng tab để chuyển giữa các chương trình.
+Máy chủ HỢP NHẤT: gộp 5 chương trình Flask vào MỘT trang duy nhất, hiển thị
+bằng 5 tab. Bấm vào từng tab để chuyển giữa các chương trình.
 
-    /            -> trang vỏ (shell) có 4 tab (mặc định mở /hsxa/)
+    /            -> trang vỏ (shell) có 5 tab (mặc định mở /hsxa/)
     /hsxa/...    -> 📂 Tạo bìa hồ sơ xã          (HSxa/app.py)
     /bia/...     -> 📚 Tạo bìa hồ sơ            (app.py ở thư mục gốc)
     /mucluc/...  -> 📑 Mục lục văn bản, tài liệu (Phanmem_muclucdang/app.py)
     /nhan/...    -> 🏷️ In nhãn hộp lưu trữ xã    (Innhan_xa/app.py)
+    /mlxa/...    -> 📋 Mục lục xã (Excel → Word) (Muc_luc_Xa/app_mucluc.py)
 
 Mỗi chương trình con vẫn giữ NGUYÊN toàn bộ logic và vẫn chạy độc lập được
 như cũ (python3 app.py trong từng thư mục).
@@ -31,10 +32,11 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 MUCLUC_DIR = os.path.join(ROOT, "Phanmem_muclucdang")
 NHAN_DIR = os.path.join(ROOT, "Innhan_xa")
 HSXA_DIR = os.path.join(ROOT, "HSxa")
+MLXA_DIR = os.path.join(ROOT, "Muc_luc_Xa")
 
 # Đưa từng thư mục vào sys.path để mỗi app con nạp được module riêng của nó
 # (tao_bia / muc_luc / in_nhan) và tìm đúng tệp mẫu .docx cạnh nó.
-for d in (ROOT, MUCLUC_DIR, NHAN_DIR, HSXA_DIR):
+for d in (ROOT, MUCLUC_DIR, NHAN_DIR, HSXA_DIR, MLXA_DIR):
     if d not in sys.path:
         sys.path.insert(0, d)
 
@@ -83,9 +85,10 @@ mucluc_app = _load_flask_app(os.path.join(MUCLUC_DIR, "app.py"), "mucluc_app_mod
 nhan_app = _load_flask_app(os.path.join(NHAN_DIR, "app.py"), "nhan_app_module")
 hsxa_app = _load_flask_app(os.path.join(HSXA_DIR, "app.py"), "hsxa_app_module",
                             shadow={"tao_bia": os.path.join(HSXA_DIR, "tao_bia.py")})
+mlxa_app = _load_flask_app(os.path.join(MLXA_DIR, "app_mucluc.py"), "mlxa_app_module")
 
 
-# --------------------------- Trang vỏ (4 tab) --------------------------------
+# --------------------------- Trang vỏ (5 tab) --------------------------------
 shell = Flask("shell")
 
 SHELL_PAGE = r"""
@@ -127,6 +130,8 @@ SHELL_PAGE = r"""
        box-shadow:0 -3px 0 #059669 inset;}
   .tab.active.hsxa{background:linear-gradient(180deg,#fef3c7,#fff);color:#b45309;
        box-shadow:0 -3px 0 #d97706 inset;}
+  .tab.active.mlxa{background:linear-gradient(180deg,#fce7f3,#fff);color:#be185d;
+       box-shadow:0 -3px 0 #db2777 inset;}
 
   .stage{flex:1 1 auto;background:#fff;position:relative;overflow:hidden;}
   .frame{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;}
@@ -141,13 +146,14 @@ SHELL_PAGE = r"""
     <div class="brand">
       <span class="dot">🗄️</span>
       <span class="t">Bộ công cụ lưu trữ</span>
-      <span class="s">— 4 chương trình trong một trang</span>
+      <span class="s">— 5 chương trình trong một trang</span>
     </div>
     <div class="tabs" id="tabs">
       <button class="tab hsxa active"   data-key="hsxa"   data-src="/hsxa/"><span class="ico">📂</span>Tạo bìa hồ sơ xã</button>
       <button class="tab bia"           data-key="bia"    data-src="/bia/"><span class="ico">📚</span>Tạo bìa hồ sơ</button>
       <button class="tab mucluc"        data-key="mucluc" data-src="/mucluc/"><span class="ico">📑</span>Mục lục văn bản</button>
       <button class="tab nhan"          data-key="nhan"   data-src="/nhan/"><span class="ico">🏷️</span>In nhãn hộp xã</button>
+      <button class="tab mlxa"          data-key="mlxa"   data-src="/mlxa/"><span class="ico">📋</span>Mục lục xã</button>
     </div>
   </div>
 
@@ -192,12 +198,13 @@ def home():
     return render_template_string(SHELL_PAGE)
 
 
-# App WSGI hợp nhất: mặc định là trang vỏ, 4 tiền tố dẫn tới 4 app con.
+# App WSGI hợp nhất: mặc định là trang vỏ, 5 tiền tố dẫn tới 5 app con.
 application = DispatcherMiddleware(shell, {
     "/bia": bia_app,
     "/mucluc": mucluc_app,
     "/nhan": nhan_app,
     "/hsxa": hsxa_app,
+    "/mlxa": mlxa_app,
 })
 
 

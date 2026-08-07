@@ -1,7 +1,7 @@
 [project]
 name = "hoso-luutru"
 version = "0.1.0"
-description = "Bộ công cụ lưu trữ — gộp 3 chương trình Flask vào một trang (3 tab)"
+description = "Bộ công cụ lưu trữ — gộp 5 chương trình Flask vào một trang (5 tab)"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
@@ -9,6 +9,8 @@ dependencies = [
     "python-docx>=1.2.0",
     "openpyxl>=3.1.5",
     "lxml>=6.1.1",
+    # Muc_luc_Xa/app_mucluc.py đọc Excel bằng pandas
+    "pandas>=2.0.0",
 ]
 
 # Nhóm phụ thuộc chỉ dùng khi triển khai (gunicorn). Cài kèm bằng:

@@ -27,12 +27,32 @@ markupsafe==3.0.3
     #   flask
     #   jinja2
     #   werkzeug
+numpy==2.0.2 ; python_full_version < '3.10'
+    # via pandas
+numpy==2.2.6 ; python_full_version == '3.10.*'
+    # via pandas
+numpy==2.4.6 ; python_full_version == '3.11.*'
+    # via pandas
+numpy==2.5.1 ; python_full_version >= '3.12'
+    # via pandas
 openpyxl==3.1.5
     # via hoso-luutru
+pandas==2.3.3 ; python_full_version < '3.11'
+    # via hoso-luutru
+pandas==3.0.5 ; python_full_version >= '3.11'
+    # via hoso-luutru
+python-dateutil==2.9.0.post0
+    # via pandas
 python-docx==1.2.0
     # via hoso-luutru
+pytz==2026.3.post1 ; python_full_version < '3.11'
+    # via pandas
+six==1.17.0
+    # via python-dateutil
 typing-extensions==4.16.0
     # via python-docx
+tzdata==2026.3 ; python_full_version < '3.11' or sys_platform == 'emscripten' or sys_platform == 'win32'
+    # via pandas
 werkzeug==3.1.8
     # via flask
 zipp==3.23.1 ; python_full_version < '3.10'
