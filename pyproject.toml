@@ -1,7 +1,7 @@
 [project]
 name = "hoso-luutru"
 version = "0.1.0"
-description = "Bộ công cụ lưu trữ — gộp 5 chương trình Flask vào một trang (5 tab)"
+description = "Bộ công cụ lưu trữ — gộp 6 chương trình Flask vào một trang (6 tab)"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [

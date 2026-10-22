@@ -1,9 +1,9 @@
 # Bộ công cụ lưu trữ hồ sơ (Di Văn)
 
-Gộp **5 chương trình** xử lý hồ sơ lưu trữ vào **một trang web duy nhất với 5 tab**
+Gộp **6 chương trình** xử lý hồ sơ lưu trữ vào **một trang web duy nhất với 6 tab**
 (`server.py`). Mỗi chương trình đọc **Excel (.xlsx)** rồi xuất ra **Word (.docx)**.
 Giao diện kéo-thả nhiều tệp, xử lý **tuần tự** với **thanh tiến độ realtime** (không đơ UI);
-4 chương trình đầu đóng gói **.zip** khi có nhiều kết quả.
+4 chương trình đầu và 🗂️ đóng gói **.zip** khi có nhiều kết quả.
 
 | Tab | Chương trình | Nguồn | Kết quả |
 |-----|--------------|-------|---------|
@@ -12,6 +12,7 @@ Giao diện kéo-thả nhiều tệp, xử lý **tuần tự** với **thanh ti�
 | 📑 | **Mục lục văn bản, tài liệu** | `Phanmem_muclucdang/app.py` + `muc_luc.py` | Word A4 **nằm ngang** (14 cột), mỗi sheet một tệp |
 | 🏷️ | **In nhãn hộp lưu trữ xã** | `Innhan_xa/app.py` + `in_nhan.py` | Word A4 **dọc**, 4 nhãn/trang |
 | 📋 | **Mục lục xã (Excel → Word)** | `Muc_luc_Xa/app_mucluc.py` | Word A4 **dọc** (7 cột), mỗi hồ sơ một trang |
+| 🗂️ | **IN DỰ ÁN TAM ĐẠI** (Mục lục hồ sơ) | `Tam_Dai/app.py` + `muc_luc_ho_so.py` | Word **khổ ngang** 5 phần (bìa, chữ viết tắt, phụ lục, bảng thống kê hồ sơ, chứng từ kết thúc), mỗi tệp Excel một tệp Word |
 
 ## Bắt đầu nhanh
 
@@ -24,10 +25,10 @@ PORT=5019 uv run server.py  # đổi cổng
 ngay lần chạy đầu — không cần kích hoạt môi trường ảo thủ công.
 Chưa có `uv`? Xem https://docs.astral.sh/uv/ hoặc chạy `./install.sh` (tự cài `uv` giúp bạn).
 
-Trang chủ (`/`) là vỏ chứa 5 tab; mỗi tab nạp một chương trình con qua đường dẫn
-`/hsxa/`, `/bia/`, `/mucluc/`, `/nhan/`, `/mlxa/` trong **cùng một tiến trình Flask**.
+Trang chủ (`/`) là vỏ chứa 6 tab; mỗi tab nạp một chương trình con qua đường dẫn
+`/hsxa/`, `/bia/`, `/mucluc/`, `/nhan/`, `/mlxa/`, `/tamdai/` trong **cùng một tiến trình Flask**.
 
-## Năm chương trình & cấu trúc Excel
+## Sáu chương trình & cấu trúc Excel
 
 ### 📂 Tạo bìa hồ sơ xã — tab `/hsxa/`
 
@@ -119,13 +120,29 @@ không ghi tệp nào lên đĩa. Giới hạn **16 MB/tệp tải lên**.
 
 Tệp Excel cần **ít nhất 8 cột** và **dòng 1 là tiêu đề** (luôn bị bỏ qua).
 
+### 🗂️ IN DỰ ÁN TAM ĐẠI — Mục lục hồ sơ (Excel → Word) — tab `/tamdai/`
+
+Mỗi **tệp Excel** theo mẫu "Mục lục hồ sơ" (6 sheet) → **một tệp Word khổ ngang** cùng tên,
+gồm 5 phần, mỗi phần một trang mới: **Tờ bìa**, **Bảng chữ viết tắt**, **Phụ lục tra cứu**,
+**Bảng thống kê hồ sơ** (13 cột, tiêu đề lặp lại mỗi trang) và **Chứng từ kết thúc** (kèm chữ ký).
+Sheet được nhận diện **theo nội dung** (không theo tên); sheet "Biên mục" bị bỏ qua; thiếu bảng
+thống kê hồ sơ thì báo lỗi cho tệp đó, các tệp khác vẫn chạy.
+
+- Chọn nhiều `.xlsx` hoặc một `.zip` chứa `.xlsx` (máy chủ tự giải nén); tải từng `.docx` hoặc tất cả
+  trong một `.zip`; kết quả lưu tạm trong RAM 2 giờ. Tối đa 500 MB và 500 tệp mỗi lượt.
+- Tùy chọn: đánh số trang (trang 2 mang số 2 — mặc định, bìa không in số / trang 2 mang số 1),
+  khổ giấy (A4 ngang — mặc định / Letter ngang), cỡ chữ bảng thống kê (8.5 / 9 / 10 / 11 pt).
+- Mô tả chi tiết 6 sheet, quy tắc đệm số 0, API: xem docstring đầu `Tam_Dai/muc_luc_ho_so.py`.
+- Kiểm thử: `uv run python -m unittest discover -s Tam_Dai -t Tam_Dai` (51 ca; các ca dùng tệp mẫu
+  `Tam_Dai/ĐU Tam Đại Vĩnh viễn.xlsx` được bỏ qua nếu thiếu — tệp mẫu không đưa lên git).
+
 ## Chạy
 
 ```bash
-# Toàn bộ 5 tab (khuyến nghị)
+# Toàn bộ 6 tab (khuyến nghị)
 uv run server.py
 
-# Sản xuất — gunicorn phục vụ cả 5 tab
+# Sản xuất — gunicorn phục vụ cả 6 tab
 uv run --group deploy gunicorn --workers 1 --threads 8 --bind 0.0.0.0:5019 server:application
 ```
 
@@ -139,10 +156,11 @@ uv run app.py                          # 📚 -> http://127.0.0.1:5019
 uv run Phanmem_muclucdang/app.py       # 📑 -> http://127.0.0.1:5050
 uv run Innhan_xa/app.py                # 🏷️ -> http://127.0.0.1:5050
 uv run Muc_luc_Xa/app_mucluc.py        # 📋 -> http://127.0.0.1:5000
+uv run Tam_Dai/app.py                  # 🗂️ -> http://127.0.0.1:5039
 ```
 
 > Cổng của 📂/📚 trùng nhau (5019) và 📑/🏷️ cũng trùng nhau (5050) — **không chạy đồng thời
-> hai chương trình cùng cổng**. Chỉ 📋 nhận biến `PORT` để đổi cổng; muốn chạy tất cả cùng lúc
+> hai chương trình cùng cổng**. Chỉ 📋 và 🗂️ nhận biến `PORT` để đổi cổng; muốn chạy tất cả cùng lúc
 > thì dùng `server.py`.
 
 Dòng lệnh (CLI) không cần web:
@@ -152,6 +170,7 @@ uv run tao_bia.py --mau Sample.docx --data "du_lieu.xlsx" --out ket_qua.docx
 uv run HSxa/tao_bia.py --mau "HSxa/Bìa HS.docx" --data "du_lieu.xlsx" \
         --out ket_qua.docx --phong-so 001 --muc-luc 01
 uv run Phanmem_muclucdang/muc_luc.py "du_lieu.xlsx" --phong 001 --muc-luc 01 --outdir .
+uv run Tam_Dai/muc_luc_ho_so.py "ĐU Tam Đại Vĩnh viễn.xlsx" -o ket_qua --start 2 --page A4 --font 8.5
 ```
 
 ## Cài đặt
@@ -187,15 +206,15 @@ dùng cho 📂 và 📚), `TEM_TEMPLATE` (tệp khuôn nhãn của 🏷️).
 
 ## Ghi chú kỹ thuật
 
-> **Vì sao `--workers 1`?** Bốn chương trình 📂 📚 📑 🏷️ giữ tệp kết quả **tạm trong RAM** của
+> **Vì sao `--workers 1`?** Năm chương trình 📂 📚 📑 🏷️ 🗂️ giữ tệp kết quả **tạm trong RAM** của
 > tiến trình theo mã công việc. Nhiều worker sẽ khiến lượt tải rơi vào tiến trình khác (mất kết
 > quả). Cần chịu tải cao hơn thì tăng `--threads`, **đừng** tăng worker.
 > (📋 trả tệp thẳng trong một request nên không bị ràng buộc này, nhưng vẫn dùng chung tiến trình.)
 
-- `server.py` dùng `DispatcherMiddleware` mount 5 app dưới `/hsxa`, `/bia`, `/mucluc`, `/nhan`,
-  `/mlxa`. Phần JavaScript mỗi app gọi API theo tiền tố `BASE` lấy từ `location.pathname`, nên
+- `server.py` dùng `DispatcherMiddleware` mount 6 app dưới `/hsxa`, `/bia`, `/mucluc`, `/nhan`,
+  `/mlxa`, `/tamdai`. Phần JavaScript mỗi app gọi API theo tiền tố `BASE` lấy từ `location.pathname`, nên
   chạy đúng cả khi gộp lẫn khi chạy độc lập.
-- Bốn tệp `app.py` trùng tên được nạp bằng `importlib` theo **đường dẫn thật** với tên module
+- Năm tệp `app.py` trùng tên được nạp bằng `importlib` theo **đường dẫn thật** với tên module
   riêng, nên không đè lên nhau. Hai bản `tao_bia.py` (gốc và `HSxa/`) được "che" (shadow) tạm
   trong `sys.modules` lúc nạp để mỗi app dùng đúng bản của mình.
 - Tệp mẫu `.docx`: 📚 dùng `Sample.docx` ở thư mục gốc; 📂 dùng `HSxa/Bìa HS.docx` (tự bỏ qua
@@ -206,11 +225,12 @@ dùng cho 📂 và 📚), `TEM_TEMPLATE` (tệp khuôn nhãn của 🏷️).
 
 ## Tệp chính
 
-- `server.py` — máy chủ hợp nhất (`server:application`), trang 5 tab.
+- `server.py` — máy chủ hợp nhất (`server:application`), trang 6 tab.
 - `pyproject.toml` / `uv.lock` / `.python-version` — khai báo & khoá thư viện cho uv.
 - `HSxa/app.py` + `HSxa/tao_bia.py` — 📂 Tạo bìa hồ sơ xã (web + CLI).
 - `app.py` + `tao_bia.py` — 📚 Tạo bìa hồ sơ (web + CLI).
 - `Phanmem_muclucdang/app.py` + `muc_luc.py` — 📑 Mục lục văn bản (web + CLI).
 - `Innhan_xa/app.py` + `in_nhan.py` — 🏷️ In nhãn hộp xã.
 - `Muc_luc_Xa/app_mucluc.py` — 📋 Mục lục xã (một tệp, tự chứa).
+- `Tam_Dai/app.py` + `muc_luc_ho_so.py` — 🗂️ IN DỰ ÁN TAM ĐẠI: Mục lục hồ sơ Excel → Word (web + CLI); `Tam_Dai/tests/`, `Tam_Dai/tools/` — kiểm thử & đối chiếu mẫu.
 - `install.sh` — cài đặt & tạo service; `deploy/nginx/` — cấu hình reverse proxy.

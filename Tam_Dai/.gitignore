@@ -1,0 +1,7 @@
+# Tệp mẫu dữ liệu thật và kết quả — không đưa lên git
+*.xlsx
+*.xlsm
+*.docx
+*.pdf
+ket_qua/
+__pycache__/

@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-Máy chủ HỢP NHẤT: gộp 5 chương trình Flask vào MỘT trang duy nhất, hiển thị
-bằng 5 tab. Bấm vào từng tab để chuyển giữa các chương trình.
+Máy chủ HỢP NHẤT: gộp 6 chương trình Flask vào MỘT trang duy nhất, hiển thị
+bằng 6 tab. Bấm vào từng tab để chuyển giữa các chương trình.
 
-    /            -> trang vỏ (shell) có 5 tab (mặc định mở /hsxa/)
+    /            -> trang vỏ (shell) có 6 tab (mặc định mở /hsxa/)
     /hsxa/...    -> 📂 Tạo bìa hồ sơ xã          (HSxa/app.py)
     /bia/...     -> 📚 Tạo bìa hồ sơ            (app.py ở thư mục gốc)
     /mucluc/...  -> 📑 Mục lục văn bản, tài liệu (Phanmem_muclucdang/app.py)
     /nhan/...    -> 🏷️ In nhãn hộp lưu trữ xã    (Innhan_xa/app.py)
     /mlxa/...    -> 📋 Mục lục xã (Excel → Word) (Muc_luc_Xa/app_mucluc.py)
+    /tamdai/...  -> 🗂️ IN DỰ ÁN TAM ĐẠI: Mục lục hồ sơ Excel → Word khổ ngang
+                    (Tam_Dai/app.py + muc_luc_ho_so.py)
 
 Mỗi chương trình con vẫn giữ NGUYÊN toàn bộ logic và vẫn chạy độc lập được
 như cũ (python3 app.py trong từng thư mục).
@@ -33,10 +35,11 @@ MUCLUC_DIR = os.path.join(ROOT, "Phanmem_muclucdang")
 NHAN_DIR = os.path.join(ROOT, "Innhan_xa")
 HSXA_DIR = os.path.join(ROOT, "HSxa")
 MLXA_DIR = os.path.join(ROOT, "Muc_luc_Xa")
+TAMDAI_DIR = os.path.join(ROOT, "Tam_Dai")
 
 # Đưa từng thư mục vào sys.path để mỗi app con nạp được module riêng của nó
-# (tao_bia / muc_luc / in_nhan) và tìm đúng tệp mẫu .docx cạnh nó.
-for d in (ROOT, MUCLUC_DIR, NHAN_DIR, HSXA_DIR, MLXA_DIR):
+# (tao_bia / muc_luc / in_nhan / muc_luc_ho_so) và tìm đúng tệp mẫu .docx cạnh nó.
+for d in (ROOT, MUCLUC_DIR, NHAN_DIR, HSXA_DIR, MLXA_DIR, TAMDAI_DIR):
     if d not in sys.path:
         sys.path.insert(0, d)
 
@@ -86,9 +89,10 @@ nhan_app = _load_flask_app(os.path.join(NHAN_DIR, "app.py"), "nhan_app_module")
 hsxa_app = _load_flask_app(os.path.join(HSXA_DIR, "app.py"), "hsxa_app_module",
                             shadow={"tao_bia": os.path.join(HSXA_DIR, "tao_bia.py")})
 mlxa_app = _load_flask_app(os.path.join(MLXA_DIR, "app_mucluc.py"), "mlxa_app_module")
+tamdai_app = _load_flask_app(os.path.join(TAMDAI_DIR, "app.py"), "tamdai_app_module")
 
 
-# --------------------------- Trang vỏ (5 tab) --------------------------------
+# --------------------------- Trang vỏ (6 tab) --------------------------------
 shell = Flask("shell")
 
 SHELL_PAGE = r"""
@@ -132,6 +136,8 @@ SHELL_PAGE = r"""
        box-shadow:0 -3px 0 #d97706 inset;}
   .tab.active.mlxa{background:linear-gradient(180deg,#fce7f3,#fff);color:#be185d;
        box-shadow:0 -3px 0 #db2777 inset;}
+  .tab.active.tamdai{background:linear-gradient(180deg,#ccfbf1,#fff);color:#0f766e;
+       box-shadow:0 -3px 0 #0d9488 inset;}
 
   .stage{flex:1 1 auto;background:#fff;position:relative;overflow:hidden;}
   .frame{position:absolute;inset:0;width:100%;height:100%;border:0;display:none;}
@@ -146,7 +152,7 @@ SHELL_PAGE = r"""
     <div class="brand">
       <span class="dot">🗄️</span>
       <span class="t">Bộ công cụ lưu trữ</span>
-      <span class="s">— 5 chương trình trong một trang</span>
+      <span class="s">— 6 chương trình trong một trang</span>
     </div>
     <div class="tabs" id="tabs">
       <button class="tab hsxa active"   data-key="hsxa"   data-src="/hsxa/"><span class="ico">📂</span>Tạo bìa hồ sơ xã</button>
@@ -154,6 +160,7 @@ SHELL_PAGE = r"""
       <button class="tab mucluc"        data-key="mucluc" data-src="/mucluc/"><span class="ico">📑</span>Mục lục văn bản</button>
       <button class="tab nhan"          data-key="nhan"   data-src="/nhan/"><span class="ico">🏷️</span>In nhãn hộp xã</button>
       <button class="tab mlxa"          data-key="mlxa"   data-src="/mlxa/"><span class="ico">📋</span>Mục lục xã</button>
+      <button class="tab tamdai"        data-key="tamdai" data-src="/tamdai/"><span class="ico">🗂️</span>IN DỰ ÁN TAM ĐẠI</button>
     </div>
   </div>
 
@@ -198,13 +205,14 @@ def home():
     return render_template_string(SHELL_PAGE)
 
 
-# App WSGI hợp nhất: mặc định là trang vỏ, 5 tiền tố dẫn tới 5 app con.
+# App WSGI hợp nhất: mặc định là trang vỏ, 6 tiền tố dẫn tới 6 app con.
 application = DispatcherMiddleware(shell, {
     "/bia": bia_app,
     "/mucluc": mucluc_app,
     "/nhan": nhan_app,
     "/hsxa": hsxa_app,
     "/mlxa": mlxa_app,
+    "/tamdai": tamdai_app,
 })
 
 
