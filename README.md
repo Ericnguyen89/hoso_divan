@@ -122,18 +122,20 @@ Tệp Excel cần **ít nhất 8 cột** và **dòng 1 là tiêu đề** (luôn 
 
 ### 🗂️ IN DỰ ÁN TAM ĐẠI — Mục lục hồ sơ (Excel → Word) — tab `/tamdai/`
 
-Mỗi **tệp Excel** theo mẫu "Mục lục hồ sơ" (6 sheet) → **một tệp Word khổ ngang** cùng tên,
+Mỗi **tệp Excel** theo mẫu "Mục lục hồ sơ" (5 sheet `TB` → `VT` → `PL` → `ML` → `CTKT`) → **một tệp Word khổ ngang** cùng tên,
 gồm 5 phần, mỗi phần một trang mới: **Tờ bìa**, **Bảng chữ viết tắt**, **Phụ lục tra cứu**,
-**Bảng thống kê hồ sơ** (13 cột, tiêu đề lặp lại mỗi trang) và **Chứng từ kết thúc** (kèm chữ ký).
-Sheet được nhận diện **theo nội dung** (không theo tên); sheet "Biên mục" bị bỏ qua; thiếu bảng
-thống kê hồ sơ thì báo lỗi cho tệp đó, các tệp khác vẫn chạy.
+**Bảng thống kê hồ sơ** (13 hoặc 14 cột, tiêu đề lặp lại mỗi trang) và **Chứng từ kết thúc** (kèm chữ ký).
+Sheet được nhận diện theo **tên viết tắt** `TB/VT/PL/ML/CTKT` (không phân biệt hoa thường); tệp cũ chưa đổi
+tên vẫn chạy nhờ nhận theo nội dung → từ khóa trong tên sheet → thứ tự. Tiêu đề cột nhận theo vai trò
+(`Số hồ sơ` / `Hồ sơ số` / `Hồ sơ số (đơn vị bảo quản)`, `Số cặp (hộp)` / `Hộp (cặp) số`…). Sheet "Biên mục"
+bị bỏ qua; thiếu bảng thống kê hồ sơ thì báo lỗi cho tệp đó, các tệp khác vẫn chạy.
 
 - Chọn nhiều `.xlsx` hoặc một `.zip` chứa `.xlsx` (máy chủ tự giải nén); tải từng `.docx` hoặc tất cả
   trong một `.zip`; kết quả lưu tạm trong RAM 2 giờ. Tối đa 500 MB và 500 tệp mỗi lượt.
 - Tùy chọn: đánh số trang (trang 2 mang số 2 — mặc định, bìa không in số / trang 2 mang số 1),
   khổ giấy (A4 ngang — mặc định / Letter ngang), cỡ chữ bảng thống kê (8.5 / 9 / 10 / 11 pt).
 - Mô tả chi tiết 6 sheet, quy tắc đệm số 0, API: xem docstring đầu `Tam_Dai/muc_luc_ho_so.py`.
-- Kiểm thử: `uv run python -m unittest discover -s Tam_Dai -t Tam_Dai` (51 ca; các ca dùng tệp mẫu
+- Kiểm thử: `uv run python -m unittest discover -s Tam_Dai -t Tam_Dai` (61 ca; các ca dùng tệp mẫu
   `Tam_Dai/ĐU Tam Đại Vĩnh viễn.xlsx` được bỏ qua nếu thiếu — tệp mẫu không đưa lên git).
 
 ## Chạy

@@ -1035,6 +1035,274 @@ class TestSynthetic(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
+# 5b. Nhận diện sheet theo TÊN sheet và thứ tự chuẩn (Tờ bìa → Chữ viết tắt → Phụ lục →
+#     Bảng thống kê → [Biên mục] → Chứng từ kết thúc / CTKT)
+# ---------------------------------------------------------------------------
+def _wb_bytes(wb) -> bytes:
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
+def _fill_closing_abbrev(ws, with_title=True):
+    """Sheet chứng từ kết thúc kiểu viết tắt: tiêu đề 'CTKT' (hoặc không có tiêu đề)."""
+    if with_title:
+        _set(ws, "B2", "CTKT", bold=True)
+    _set(ws, "B4", "Mục lục này gồm: 02 hồ sơ (đơn vị bảo quản)")
+    _set(ws, "B5", "Đánh số từ hồ sơ số 0007 đến hồ sơ số 0008")
+    _set(ws, "I7", "Nơi Thử, Ngày … tháng 1 năm 2026")
+    _set(ws, "A8", "PHÊ DUYỆT", bold=True)
+    _set(ws, "J8", "Người lập mục lục hồ sơ")
+    _set(ws, "A9", "CHÁNH VĂN PHÒNG", bold=True)
+
+
+class TestSheetDetection(unittest.TestCase):
+    def test_closing_sheet_named_ctkt_with_abbreviated_title(self):
+        """Tên sheet 'CTKT' là yếu tố xác định; tiêu đề trong sheet viết tắt 'CTKT' được in đầy đủ."""
+        wb = openpyxl.Workbook()
+        wb.remove(wb.active)
+        _fill_main(wb.create_sheet("Phông X VV"), DEFAULT_MAIN_ROWS)
+        _fill_closing_abbrev(wb.create_sheet("CTKT"))
+        raw = _wb_bytes(wb)
+        data = m.read_workbook(raw)
+        self.assertEqual(data.sheet_names.get("closing"), "CTKT")
+        self.assertEqual(data.closing.title.text, "CHỨNG TỪ KẾT THÚC")
+        self.assertEqual([ln.text for ln in data.closing.body_lines],
+                         ["Mục lục này gồm: 02 hồ sơ (đơn vị bảo quản)",
+                          "Đánh số từ hồ sơ số 0007 đến hồ sơ số 0008"])
+        self.assertEqual([ln.text for ln in data.closing.left_lines], ["PHÊ DUYỆT", "CHÁNH VĂN PHÒNG"])
+        self.assertEqual([ln.text for ln in data.closing.right_lines],
+                         ["Nơi Thử, Ngày … tháng 1 năm 2026", "Người lập mục lục hồ sơ"])
+        view = DocxView(m.convert_workbook(raw))
+        self.assertEqual(len(view.sectprs), 2)
+        self.assertIn("CHỨNG TỪ KẾT THÚC", view.section_text(1))
+        self.assertNotIn("CTKT", view.all_text)
+
+    def test_closing_sheet_named_ctkt_without_title_row(self):
+        """Tên sheet chứa 'CTKT' nhưng trong sheet không có dòng tiêu đề → vẫn nhận; in tiêu đề
+        chuẩn và mọi dòng trước khối chữ ký là nội dung."""
+        wb = openpyxl.Workbook()
+        wb.remove(wb.active)
+        _fill_main(wb.create_sheet("Phông X VV"), DEFAULT_MAIN_ROWS)
+        _fill_closing_abbrev(wb.create_sheet("6. CTKT 2026"), with_title=False)
+        data = m.read_workbook(_wb_bytes(wb))
+        self.assertEqual(data.sheet_names.get("closing"), "6. CTKT 2026")
+        self.assertEqual(data.closing.title.text, "CHỨNG TỪ KẾT THÚC")
+        self.assertEqual(len(data.closing.body_lines), 2)
+        self.assertEqual([ln.text for ln in data.closing.left_lines], ["PHÊ DUYỆT", "CHÁNH VĂN PHÒNG"])
+
+    def test_closing_sheet_name_variants_and_negative(self):
+        """Nhiều cách đặt tên sheet chứng từ đều được nhận (bỏ dấu, không phân biệt hoa thường);
+        sheet tên lạ không có tiêu đề thì KHÔNG được coi là chứng từ."""
+        for name in ("ctkt", "Chứng từ KT", "Chung tu ket thuc", "CT kết thúc"):
+            wb = openpyxl.Workbook()
+            wb.remove(wb.active)
+            _fill_main(wb.create_sheet("Phông X VV"), DEFAULT_MAIN_ROWS)
+            _fill_closing_abbrev(wb.create_sheet(name), with_title=False)
+            data = m.read_workbook(_wb_bytes(wb))
+            self.assertEqual(data.sheet_names.get("closing"), name, name)
+        wb = openpyxl.Workbook()
+        wb.remove(wb.active)
+        _fill_main(wb.create_sheet("Phông X VV"), DEFAULT_MAIN_ROWS)
+        _fill_closing_abbrev(wb.create_sheet("Ghi chú"), with_title=False)
+        data = m.read_workbook(_wb_bytes(wb))
+        self.assertIsNone(data.closing)
+        self.assertNotIn("closing", data.sheet_names)
+
+    def test_bien_muc_excluded_by_sheet_name(self):
+        """Sheet tên 'Biên mục' (nội dung không có chữ khóa) đứng cuối: không bao giờ bị lấy làm chứng
+        từ kết thúc theo thứ tự; khi có sheet 'CTKT' đứng trước nó thì CTKT vẫn được chọn."""
+        def bien_muc(ws):
+            _set(ws, "A1", "Danh mục tài liệu trong hồ sơ")
+            for col, h in zip("ABCD", ("Số TT", "Số, ký hiệu", "Ngày tháng", "Trích yếu")):
+                _set(ws, col + "2", h, bold=True)
+            _set(ws, "A3", "01")
+            _set(ws, "D3", "Nghị quyết về nhiệm vụ năm 2006")
+
+        wb = openpyxl.Workbook()
+        wb.remove(wb.active)
+        _fill_main(wb.create_sheet("Phông X VV"), DEFAULT_MAIN_ROWS)
+        bien_muc(wb.create_sheet("Biên mục"))
+        data = m.read_workbook(_wb_bytes(wb))
+        self.assertIsNone(data.closing)
+        self.assertEqual(data.sheet_names, {"main_table": "Phông X VV"})
+
+        wb = openpyxl.Workbook()
+        wb.remove(wb.active)
+        _fill_main(wb.create_sheet("Phông X VV"), DEFAULT_MAIN_ROWS)
+        _fill_closing_abbrev(wb.create_sheet("CTKT"))
+        bien_muc(wb.create_sheet("Biên mục"))
+        raw = _wb_bytes(wb)
+        data = m.read_workbook(raw)
+        self.assertEqual(data.sheet_names, {"main_table": "Phông X VV", "closing": "CTKT"})
+        view = DocxView(m.convert_workbook(raw))
+        self.assertEqual(len(view.sectprs), 2)
+        self.assertNotIn("Danh mục tài liệu trong hồ sơ", view.all_text)
+
+    def test_appendix_detected_by_sheet_name_when_title_abbreviated(self):
+        """Sheet 'Phụ lục' có tiêu đề 'PHỤ LỤC' (không có chữ 'tra cứu') → nhận theo TÊN sheet."""
+        wb = openpyxl.Workbook()
+        wb.remove(wb.active)
+        ap = wb.create_sheet("Phụ lục")
+        _set(ap, "A1", "PHỤ LỤC", bold=True)
+        for col, h in zip("ABCD", ("Đề mục", "Tiêu đề nhóm", "Trang số", "Ghi chú")):
+            _set(ap, col + "2", h, bold=True)
+        _set(ap, "A3", "I.", bold=True)
+        _set(ap, "B3", "NHÓM THỨ NHẤT", bold=True)
+        _fill_main(wb.create_sheet("Phông X VV"), DEFAULT_MAIN_ROWS)
+        raw = _wb_bytes(wb)
+        data = m.read_workbook(raw)
+        self.assertEqual(data.sheet_names.get("appendix"), "Phụ lục")
+        self.assertEqual(data.appendix.rows[0][1].text, "NHÓM THỨ NHẤT")
+        view = DocxView(m.convert_workbook(raw))
+        self.assertEqual(len(view.sectprs), 2)
+        view.table_by_first_cell("Đề mục", 4)
+
+    def test_real_sample_with_renamed_sheets(self):
+        """Tệp mẫu thật với tên sheet đổi khác (bảng thống kê tên lạ, chứng từ đặt tên 'CTKT',
+        Biên mục giữ tên) → nhận đủ 5 phần, cùng số dòng như bản gốc."""
+        if not HAS_SAMPLE:
+            self.skipTest("thiếu tệp mẫu")
+        wb = openpyxl.load_workbook(SAMPLE_XLSX)
+        for ws, name in zip(wb.worksheets, ("Sheet1", "Sheet2", "Sheet3", "ĐU XYZ 2026", "Biên mục", "CTKT")):
+            ws.title = name
+        data = m.read_workbook(_wb_bytes(wb))
+        self.assertEqual(data.sheet_names, {"main_table": "ĐU XYZ 2026", "closing": "CTKT",
+                                            "appendix": "Sheet3", "abbreviations": "Sheet2",
+                                            "cover": "Sheet1"})
+        self.assertEqual(len(data.main_table.rows), 266)
+        self.assertEqual(data.closing.title.text, "CHỨNG TỪ KẾT THÚC")
+
+
+# ---------------------------------------------------------------------------
+# 5c. Mẫu mới: tên sheet viết tắt TB/VT/PL/ML/CTKT, tiêu đề cột "Hồ sơ số", 14 cột, khối chữ ký
+# ---------------------------------------------------------------------------
+HEADERS_14 = ["Hộp (cặp) số", "Phông số", "Mục lục số", "Hồ sơ số", "Tên nhóm và tên hồ sơ (đơn vị bảo quản)",
+              "Thời gian bắt đầu và kết thúc", "Số trang", "Số tài liệu", "Thời hạn bảo quản", "Độ mật",
+              "Chú giải", "Từ khóa", "Ghi chú", "Tên thư mục hồ sơ"]
+CORPUS_DIR = os.path.join(PROJECT, "Gửi Minh 24-10")
+
+
+def _fill_main_headers(ws, headers, rows):
+    """Bảng thống kê với hàng tiêu đề tuỳ ý ở dòng 3, hàng đánh số ở dòng 4, dữ liệu từ dòng 5."""
+    _set(ws, "A1", "BẢNG THỐNG KÊ HỒ SƠ", bold=True)
+    for j, h in enumerate(headers):
+        ws.cell(row=3, column=j + 1, value=h).font = Font(bold=True)
+        ws.cell(row=4, column=j + 1, value="(%d)" % (j + 1))
+    for i, spec in enumerate(rows):
+        for letter, value in spec.items():
+            if letter == "bold":
+                continue
+            c = ws.cell(row=5 + i, column=openpyxl.utils.column_index_from_string(letter), value=value)
+            if spec.get("bold") or letter in "ABCD":
+                c.font = Font(bold=True)
+
+
+def _fill_closing_layout(ws, date_ref="F12", nguoi_lap_ref="G13", name_ref="I17"):
+    """Chứng từ kết thúc kiểu tệp mới: ngày tháng ở cột F hoặc I, tên người ký cách 3 dòng trống."""
+    _set(ws, "B2", "        CHỨNG TỪ KẾT THÚC", bold=True)
+    _set(ws, "B4", "Mục lục này gồm:  06 hồ sơ (đơn vị bảo quản) ")
+    _set(ws, "B5", "Trong đó có: 06 hồ sơ (ĐVBQ) có THBQ")
+    _set(ws, date_ref, "                     Đà Nẵng, Ngày ….... tháng 7 năm 2026")
+    _set(ws, "A13", "       PHÊ DUYỆT", bold=True)
+    _set(ws, nguoi_lap_ref, "                      Người lập mục lục hồ sơ")
+    _set(ws, "A14", "CHÁNH VĂN PHÒNG", bold=True)
+    _set(ws, name_ref, "Phan Thị Bích Vân", bold=True)
+
+
+class TestNewTemplate(unittest.TestCase):
+    def test_sheets_detected_by_abbreviated_names(self):
+        """Tên sheet quy ước TB/VT/PL/ML/CTKT là cách nhận diện chính (kể cả khi nội dung sheet không
+        có chữ khoá, vd. VT có tựa 'PHÔNG LƯU TRỮ …')."""
+        raw = make_workbook(names=["TB", "VT", "PL", "ML", "CTKT"])
+        data = m.read_workbook(raw)
+        self.assertEqual(data.sheet_names, {"main_table": "ML", "closing": "CTKT", "appendix": "PL",
+                                            "abbreviations": "VT", "cover": "TB"})
+        wb = openpyxl.load_workbook(io.BytesIO(raw))
+        wb["VT"]["A1"] = "PHÔNG LƯU TRỮ HỘI NÔNG DÂN XÃ THỬ"
+        wb["PL"]["A1"] = "PHỤ LỤC"
+        for ws, name in zip(wb.worksheets, ("tb ", "Vt", "pl", "ml", "ctkt")):
+            ws.title = name
+        data = m.read_workbook(_wb_bytes(wb))
+        self.assertEqual(sorted(data.sheet_names), ["abbreviations", "appendix", "closing", "cover", "main_table"])
+        self.assertEqual(data.abbreviations.title_lines[0].text, "PHÔNG LƯU TRỮ HỘI NÔNG DÂN XÃ THỬ")
+        self.assertEqual(len(DocxView(m.convert_workbook(_wb_bytes(wb))).sectprs), 5)
+
+    def test_main_header_variants_and_14_columns(self):
+        """'Hồ sơ số' / 'Hồ sơ số (đơn vị bảo quản số)' / 'Hộp (cặp) số' được nhận vai trò như
+        'Số hồ sơ' / 'Số cặp (hộp)'; bảng 14 cột (thêm 'Chú giải') có cột Tên nhóm rộng nhất."""
+        rows = [{"B": "06", "C": "02", "E": "I. KHÓA XXI, NHIỆM KỲ 2017-2022", "bold": True},
+                {"A": 1, "B": 6, "C": 2, "D": 1, "E": "Báo cáo của Đoàn", "F": "16/01/2017-02/10/2019",
+                 "H": "26", "I": "10 năm ĐG"},
+                {"B": "06", "C": "02", "D": "0002", "E": "Tờ trình", "F": "2017-2021", "H": "22", "I": "10 năm ĐG"}]
+        for hoso in ("Hồ sơ số", "Hồ sơ số (đơn vị bảo quản số)", "Hồ sơ số (đơn vị bảo quản)", "Số hồ sơ"):
+            headers = list(HEADERS_14)
+            headers[3] = hoso
+            wb = openpyxl.Workbook()
+            wb.remove(wb.active)
+            _fill_main_headers(wb.create_sheet("ML"), headers, rows)
+            raw = _wb_bytes(wb)
+            data = m.read_workbook(raw)
+            mt = data.main_table
+            self.assertEqual((mt.roles["HOSO"], mt.roles["TEN"], mt.roles["CAP"]), (3, 4, 0), hoso)
+            self.assertEqual(len(mt.headers), 14)
+            self.assertEqual([r.kind for r in mt.rows], ["group", "data", "data"])
+            self.assertEqual([c.text for c in mt.rows[1].cells[:5]], ["01", "006", "02", "0001", "Báo cáo của Đoàn"])
+            self.assertEqual([c.text for c in mt.rows[0].cells[:5]], ["", "06", "02", "", "I. KHÓA XXI, NHIỆM KỲ 2017-2022"])
+            view = DocxView(m.convert_workbook(raw))
+            t = [t for t in view.tables if grid_cols(t) == 14]
+            self.assertEqual(len(t), 1)
+            widths = [int(g.get(qn("w:w"))) for g in t[0].findall("w:tblGrid/w:gridCol", NS)]
+            self.assertEqual(widths.index(max(widths)), 4)                 # cột Tên nhóm rộng nhất
+            self.assertEqual(widths[10], widths[12])                        # Chú giải = Ghi chú (cột hẹp)
+            self.assertEqual(len(table_rows(t[0])), 2 + 3)
+
+    def test_closing_signature_layouts(self):
+        """Dòng ngày tháng ở cột F (hoặc I) là dòng chữ ký, không phải nội dung; 'Người lập' và tên
+        người ký bên phải; PHÊ DUYỆT / CHÁNH VĂN PHÒNG bên trái; 3 dòng trống trước tên → cách 39 pt."""
+        for date_ref, nl_ref, name_ref in (("F12", "G13", "I17"), ("I12", "J13", "L17"), ("F11", "G12", "I16")):
+            wb = openpyxl.Workbook()
+            wb.remove(wb.active)
+            _fill_main(wb.create_sheet("ML"), DEFAULT_MAIN_ROWS)
+            cl = wb.create_sheet("CTKT")
+            _fill_closing_layout(cl, date_ref, nl_ref, name_ref)
+            if date_ref == "F11":          # bố cục dịch lên một dòng
+                for ref in ("A13", "A14", nl_ref):
+                    pass
+            raw = _wb_bytes(wb)
+            closing = m.read_workbook(raw).closing
+            self.assertEqual([ln.text for ln in closing.body_lines],
+                             ["Mục lục này gồm: 06 hồ sơ (đơn vị bảo quản)", "Trong đó có: 06 hồ sơ (ĐVBQ) có THBQ"], date_ref)
+            self.assertEqual([ln.text for ln in closing.left_lines], ["PHÊ DUYỆT", "CHÁNH VĂN PHÒNG"])
+            self.assertEqual([ln.text for ln in closing.right_lines],
+                             ["Đà Nẵng, Ngày ….... tháng 7 năm 2026", "Người lập mục lục hồ sơ", "Phan Thị Bích Vân"])
+            self.assertEqual([ln.space_before for ln in closing.right_lines][:2], [0.0, 0.0])
+            self.assertGreaterEqual(closing.right_lines[2].space_before, 26.0)
+            self.assertTrue(closing.right_lines[2].bold)
+            view = DocxView(m.convert_workbook(raw))
+            sig = view.tables[-1]
+            left, right = table_rows(sig)[0].findall("w:tc", NS)
+            self.assertEqual([norm(p_text(p)) for p in right.findall("w:p", NS)],
+                             ["Đà Nẵng, Ngày ….... tháng 7 năm 2026", "Người lập mục lục hồ sơ", "Phan Thị Bích Vân"])
+            spacing = right.findall("w:p", NS)[2].find("w:pPr/w:spacing", NS)
+            self.assertGreaterEqual(int(spacing.get(qn("w:before"))), 26 * 20)
+
+    @unittest.skipUnless(os.path.isdir(CORPUS_DIR), "không có thư mục tệp thật 'Gửi Minh 24-10'")
+    def test_real_corpus_all_convert(self):
+        """Mọi tệp .xlsx thật trong thư mục 'Gửi Minh 24-10' phải đọc được đủ 5 phần."""
+        files = [f for f in sorted(os.listdir(CORPUS_DIR)) if f.endswith(".xlsx") and not f.startswith("~$")]
+        self.assertTrue(files)
+        for f in files:
+            data = m.read_workbook(os.path.join(CORPUS_DIR, f))
+            self.assertEqual(sorted(data.sheet_names), ["abbreviations", "appendix", "closing", "cover", "main_table"], f)
+            self.assertGreater(data.main_table.n_data_rows, 0, f)
+            self.assertIn("HOSO", data.main_table.roles, f)
+            self.assertEqual(len(data.cover.bottom_left), 3, f)
+            self.assertEqual([ln.text for ln in data.closing.left_lines], ["PHÊ DUYỆT", "CHÁNH VĂN PHÒNG"], f)
+            self.assertGreaterEqual(len(data.closing.right_lines), 2, f)
+
+
+# ---------------------------------------------------------------------------
 # 6. Dòng lệnh
 # ---------------------------------------------------------------------------
 def _run_cli(args, timeout=300):

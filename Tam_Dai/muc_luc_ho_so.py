@@ -5,9 +5,11 @@ in được ngay (tất cả trang nằm ngang, Times New Roman, số trang ở 
 
 MẪU EXCEL ĐẦU VÀO
 -----------------
-Một mẫu dùng chung cho hàng trăm phông lưu trữ, nhưng TÊN SHEET mỗi tệp một khác
-nên chương trình nhận diện từng sheet theo NỘI DUNG (60 dòng × 20 cột đầu tiên),
-không theo tên và không theo địa chỉ ô cố định:
+Một mẫu dùng chung cho hàng trăm phông lưu trữ. Tên sheet QUY ƯỚC (chữ viết tắt, đây là
+cách nhận diện chính): TB (Tờ bìa) → VT (Bảng chữ cái viết tắt) → PL (Phụ lục tra cứu) →
+ML (Bảng thống kê hồ sơ) → CTKT (Chứng từ kết thúc). Tệp cũ chưa đổi tên sheet vẫn được
+nhận theo nội dung (60 dòng × 20 cột đầu), theo từ khoá trong tên sheet, rồi theo thứ tự
+sheet; sheet "Biên mục" (nếu có) bị bỏ qua. Trong mỗi sheet không dùng địa chỉ ô cố định:
 
   1. Tờ bìa            — có ô "MỤC LỤC HỒ SƠ". Các dòng phía trên là tên cơ quan
                          (dòng 2 thường đỏ, đậm); các dòng phía dưới là tên phông và
@@ -21,15 +23,21 @@ không theo tên và không theo địa chỉ ô cố định:
   3. Phụ lục tra cứu   — ô "PHỤ LỤC TRA CỨU"; hàng tiêu đề "Đề mục | Tiêu đề nhóm |
                          Trang số | Ghi chú"; hàng đánh số "(1) (2) …"; rồi dữ liệu
                          (đậm/thường theo Excel).
-  4. Bảng thống kê hồ sơ (sheet chính, BẮT BUỘC) — hàng tiêu đề có cả "Số hồ sơ" và
-                         "Tên nhóm …" (13 cột A..M); hàng đánh số "(1) … (13)"; thân
+  4. Bảng thống kê hồ sơ (sheet chính, BẮT BUỘC) — hàng tiêu đề có cột Hồ sơ số ("Số
+                         hồ sơ" hoặc "Hồ sơ số (đơn vị bảo quản)") và cột "Tên nhóm …"; 13
+                         hoặc 14 cột (có/không cột "Chú giải"), bề rộng cột đặt theo tên
+                         cột; hàng đánh số "(1) … (13)"; thân
                          bảng gồm dòng TÊN NHÓM (cột Số hồ sơ trống, cột Tên nhóm có
                          chữ) và dòng HỒ SƠ (cột Số hồ sơ có số). Số cặp/phông/mục
                          lục/hồ sơ là SỐ trong Excel sẽ được đệm 0 (2/3/2/4 chữ số).
-  5. Chứng từ kết thúc — ô "CHỨNG TỪ KẾT THÚC", các dòng nội dung (chép nguyên văn),
-                         dòng ngày tháng và khối chữ ký (cột A..F: bên trái, từ cột
-                         G: bên phải).
-  Sheet "Biên mục" (MỤC LỤC VĂN BẢN, TÀI LIỆU) KHÔNG thuộc đầu ra và bị bỏ qua.
+  5. Chứng từ kết thúc — tên sheet chứa "CTKT" / "Chứng từ" là yếu tố xác định; nội
+                         dung có ô "CHỨNG TỪ KẾT THÚC" (hoặc viết tắt "CTKT", sẽ được in
+                         đầy đủ), các dòng nội dung (chép nguyên văn), dòng ngày tháng
+                         và khối chữ ký chia trái/phải theo vị trí (PHÊ DUYỆT / chức
+                         danh bên trái; ngày tháng, Người lập, tên người ký bên phải;
+                         dòng trống trong Excel thành khoảng cách).
+  Sheet "Biên mục" (tên sheet "Biên mục" hoặc nội dung MỤC LỤC VĂN BẢN, TÀI LIỆU) KHÔNG
+  thuộc đầu ra và bị bỏ qua.
   Thiếu tờ bìa / chữ viết tắt / phụ lục / chứng từ thì bỏ qua mục đó; thiếu bảng
   thống kê hồ sơ thì báo lỗi ConvertError (thông báo tiếng Việt).
 
@@ -104,20 +112,31 @@ ABBR_TABLE_WIDTH = int(8.3 * INCH)
 ABBR_PROPORTIONS = (1764, 3368, 4671, 2064)
 APPENDIX_PROPORTIONS = (1697, 7611, 1961, 1961)
 APPENDIX_ROW_HEIGHT = 345        # twips (0,24"): 2 hàng tiêu đề + 37 dòng vừa 2 trang như mẫu
-MAIN_PROPORTIONS_13 = (607, 607, 608, 998, 4969, 998, 607, 776, 895, 593, 593, 593, 593)
 EXCEL_DEFAULT_COL_WIDTH = 8.43
 
 # Vai trò cột của bảng chính, nhận theo chữ trong ô tiêu đề; số chữ số đệm 0
 ROLE_PATTERNS = (
-    ("HOSO", ("số hồ sơ",)),
     ("TEN", ("tên nhóm",)),
+    ("HOSO", ("số hồ sơ", "hồ sơ số")),      # "Số hồ sơ" | "Hồ sơ số (đơn vị bảo quản)"
     ("PHONG", ("phông",)),
     ("MUCLUC", ("mục lục",)),
-    ("CAP", ("cặp", "hộp")),
+    ("CAP", ("cặp", "hộp")),                  # "Số cặp (hộp)" | "Hộp (cặp) số"
 )
 ZERO_PAD = {"HOSO": 4, "PHONG": 3, "MUCLUC": 2, "CAP": 2}
 
+# Bề rộng tương đối từng cột bảng thống kê theo CHỮ trong ô tiêu đề (đo từ tệp mẫu 13 cột; cột lạ
+# như "Chú giải" lấy bề rộng cột hẹp). Xét theo thứ tự để "tên nhóm và tên hồ sơ" không bị nhầm
+# với "hồ sơ số", "số tài liệu" không bị nhầm với "số trang".
+MAIN_COL_WIDTH_RULES = (
+    ("tên nhóm", 4969), ("thư mục", 593), ("tài liệu", 776), ("số trang", 607),
+    ("thời gian", 998), ("thời hạn", 895), ("độ mật", 593), ("chú giải", 593),
+    ("từ kh", 593), ("ghi chú", 593), ("mục lục", 608), ("phông", 607),
+    ("cặp", 607), ("hộp", 607), ("số hồ sơ", 998), ("hồ sơ số", 998),
+)
+MAIN_COL_WIDTH_DEFAULT = 593
+
 DETECT_ROWS, DETECT_COLS = 60, 20            # vùng quét để nhận diện sheet
+CLOSING_TITLE = "CHỨNG TỪ KẾT THÚC"          # tiêu đề in khi sheet CTKT viết tắt / thiếu tiêu đề
 
 # Thứ tự phần tử con theo lược đồ OOXML (để chèn XML đúng chỗ)
 _SECTPR_SEQ = (
@@ -162,10 +181,12 @@ class ConvertError(Exception):
 # ---------------------------------------------------------------------------
 @dataclass
 class TextLine:
-    """Một dòng chữ kèm định dạng lấy từ Excel (đậm, màu RGB 'RRGGBB' hoặc None)."""
+    """Một dòng chữ kèm định dạng lấy từ Excel (đậm, màu RGB 'RRGGBB' hoặc None).
+    space_before: khoảng cách (pt) phía trên dòng, mô phỏng các dòng trống trong Excel."""
     text: str
     bold: bool = False
     color: str | None = None
+    space_before: float = 0.0
 
 
 @dataclass
@@ -248,12 +269,13 @@ class _PartNotFound(Exception):
 
 @dataclass
 class _XCell:
-    """Ô Excel có chữ: cột (1-based), giá trị gốc, chữ đã chuẩn hoá, đậm, màu."""
+    """Ô Excel có chữ: cột (1-based), giá trị gốc, chữ đã chuẩn hoá, đậm, màu, số dòng (1-based)."""
     col: int
     raw: object
     text: str
     bold: bool
     color: str | None
+    row: int = 0
 
 
 _INNER_WS = re.compile(r"[^\S\n]+")      # khoảng trắng trừ xuống dòng
@@ -304,14 +326,24 @@ def _is_int(value) -> bool:
         isinstance(value, float) and value.is_integer())
 
 
+MAX_EMPTY_RUN = 500        # dừng quét sheet sau chừng này dòng trống liên tiếp (sheet bị định dạng tới dòng 1.048.576)
+
+
 def _text_rows(ws) -> list[list[_XCell]]:
-    """Mọi dòng có chữ của sheet, mỗi dòng là danh sách ô có chữ (theo thứ tự cột)."""
+    """Mọi dòng có chữ của sheet, mỗi dòng là danh sách ô có chữ (theo thứ tự cột). Dừng sớm khi gặp
+    quá nhiều dòng trống liên tiếp: có tệp Excel định dạng cả triệu dòng trống phía dưới bảng."""
     rows = []
+    empty_run = 0
     for row in ws.iter_rows():
-        cells = [_XCell(c.column, c.value, text, bool(c.font.b), _font_color(c))
+        cells = [_XCell(c.column, c.value, text, bool(c.font.b), _font_color(c), c.row)
                  for c in row if (text := normalize_text(c.value))]
         if cells:
             rows.append(cells)
+            empty_run = 0
+        else:
+            empty_run += 1
+            if empty_run > MAX_EMPTY_RUN:
+                break
     return rows
 
 
@@ -358,20 +390,71 @@ def _has_exact(rows_keys, needle: str) -> bool:
     return any(k == needle for row in rows_keys for k in row)
 
 
+def _strip_accents(text: str) -> str:
+    """'Chứng từ kết thúc' → 'chung tu ket thuc' (chữ thường, bỏ dấu, đ→d) để so TÊN sheet."""
+    text = unicodedata.normalize("NFD", text.lower().replace("đ", "d"))
+    return _ANY_WS.sub(" ", "".join(ch for ch in text if not unicodedata.combining(ch))).strip()
+
+
+def _name_has(ws, *needles: str) -> bool:
+    """Tên sheet (bỏ dấu) chứa một trong các cụm `needles` (viết không dấu) như một từ trọn vẹn,
+    vd. 'CTKT', 'ctkt 2026', 'Chứng từ kết thúc', 'Tờ bìa', 'Biên mục'."""
+    name = _strip_accents(ws.title)
+    return any(re.search(r"(?<![a-z0-9])%s(?![a-z0-9])" % re.escape(n), name) for n in needles)
+
+
+def _is_main_header_keys(keys: Sequence[str]) -> bool:
+    """Hàng tiêu đề bảng thống kê: có cột Hồ sơ số ("Số hồ sơ" / "Hồ sơ số…") VÀ cột "Tên nhóm…",
+    và là một hàng nhiều cột (tránh nhầm với dòng "Hồ sơ số: 0001" của sheet Biên mục)."""
+    return (len(keys) >= 5
+            and any(any(p in k for p in dict(ROLE_PATTERNS)["HOSO"]) for k in keys)
+            and any("tên nhóm" in k for k in keys))
+
+
 def _is_main_sheet(rows_keys) -> bool:
-    return _has(rows_keys, "bảng thống kê hồ sơ") or any(
-        any("số hồ sơ" in k for k in row) and any("tên nhóm" in k for k in row)
-        for row in rows_keys)
+    return _has(rows_keys, "bảng thống kê hồ sơ") or any(_is_main_header_keys(row) for row in rows_keys)
 
 
-# (tên phần, các điều kiện nhận diện theo thứ tự ưu tiên, chỉ số sheet dự phòng)
+def _is_closing_name(ws, _keys=None) -> bool:
+    """Tên sheet cho biết đây là Chứng từ kết thúc ('CTKT', 'Chứng từ…', '…kết thúc')."""
+    return _name_has(ws, "ctkt", "chung tu", "ket thuc")
+
+
+def _is_bien_muc(ws, keys) -> bool:
+    """Sheet 'Biên mục' (MỤC LỤC VĂN BẢN, TÀI LIỆU) — không thuộc đầu ra; nhận theo tên hoặc nội dung."""
+    return _name_has(ws, "bien muc") or _has(keys, "mục lục văn bản")
+
+
+# Quy tắc nhận diện từng phần: (tên phần, các điều kiện (ws, keys) theo thứ tự ưu tiên — nội dung
+# trước, tên sheet sau —, chỉ số dự phòng theo THỨ TỰ SHEET CHUẨN: Tờ bìa 0 → Bảng chữ viết tắt 1 →
+# Phụ lục tra cứu 2 → Bảng thống kê 3 → [Biên mục, bị bỏ qua] → Chứng từ kết thúc = sheet cuối).
+# Riêng Chứng từ kết thúc: TÊN sheet chứa "CTKT" là yếu tố quyết định nên xét tên trước.
+def _name_is(ws, abbr: str) -> bool:
+    """Tên sheet đúng bằng chữ viết tắt quy ước (không phân biệt hoa thường, bỏ khoảng trắng thừa)."""
+    return _strip_accents(ws.title) == abbr
+
+
+# Tên sheet QUY ƯỚC của mẫu: TB (Tờ bìa) → VT (Bảng chữ cái viết tắt) → PL (Phụ lục tra cứu) →
+# ML (Bảng thống kê hồ sơ) → CTKT (Chứng từ kết thúc). Đây là cách nhận diện chính; các điều kiện
+# theo nội dung / từ khoá trong tên chỉ là dự phòng cho tệp cũ chưa đổi tên sheet.
+SHEET_ABBR = {"cover": "tb", "abbreviations": "vt", "appendix": "pl", "main_table": "ml", "closing": "ctkt"}
+
 _PART_RULES = (
-    ("main_table", (_is_main_sheet,), 3),
-    ("closing", (lambda t: _has(t, "chứng từ kết thúc"),), -1),
-    ("appendix", (lambda t: _has(t, "phụ lục tra cứu"),), 2),
-    ("abbreviations", (lambda t: _has(t, "chữ viết tắt"),), 1),
-    ("cover", (lambda t: _has_exact(t, "mục lục hồ sơ"),
-               lambda t: _has(t, "mục lục hồ sơ")), 0),
+    ("main_table", (lambda ws, t: _name_is(ws, "ml"),
+                    lambda ws, t: _is_main_sheet(t)), 3),
+    ("closing", (lambda ws, t: _name_is(ws, "ctkt"),
+                 _is_closing_name,
+                 lambda ws, t: _has(t, "chứng từ kết thúc") or _has_exact(t, "ctkt")), -1),
+    ("appendix", (lambda ws, t: _name_is(ws, "pl"),
+                  lambda ws, t: _has(t, "phụ lục tra cứu"),
+                  lambda ws, t: _name_has(ws, "phu luc", "tra cuu")), 2),
+    ("abbreviations", (lambda ws, t: _name_is(ws, "vt"),
+                       lambda ws, t: _has(t, "chữ viết tắt"),
+                       lambda ws, t: _name_has(ws, "viet tat", "chu cai")), 1),
+    ("cover", (lambda ws, t: _name_is(ws, "tb"),
+               lambda ws, t: _has_exact(t, "mục lục hồ sơ"),
+               lambda ws, t: _has(t, "mục lục hồ sơ"),
+               lambda ws, t: _name_has(ws, "bia")), 0),
 )
 
 
@@ -465,9 +548,9 @@ def _parse_appendix(ws) -> TableData:
 # --- bảng thống kê hồ sơ ---------------------------------------------------
 def _parse_main_table(ws) -> MainTableData:
     rows = _text_rows(ws)
-    hi = _find_row(rows, lambda cells: _row_has(cells, "số hồ sơ") and _row_has(cells, "tên nhóm"))
+    hi = _find_row(rows, lambda cells: _is_main_header_keys([_key(c.text) for c in cells]))
     if hi is None:
-        raise _PartNotFound("không tìm thấy hàng tiêu đề có 'Số hồ sơ' và 'Tên nhóm'")
+        raise _PartNotFound("không tìm thấy hàng tiêu đề có 'Số hồ sơ'/'Hồ sơ số' và 'Tên nhóm'")
     header = rows[hi]
     cols = [c.col for c in header]
 
@@ -516,31 +599,84 @@ def _parse_main_table(ws) -> MainTableData:
 
 
 # --- chứng từ kết thúc ------------------------------------------------------
-def _is_signature_cell(c: _XCell) -> bool:
-    """Ô mở đầu khối chữ ký: 'PHÊ DUYỆT' / 'Người lập…' ở bất kỳ cột nào, hoặc dòng ngày tháng
-    ('Ngày … tháng/năm …') nhưng chỉ khi nằm bên phải (từ cột G) để không nhầm với dòng nội dung."""
+_SIG_DATE = re.compile(r"^[^,:;]{1,40},\s*ngày\b")      # "Phú Ninh, Ngày ….. tháng 7 năm 2026"
+
+
+def _is_date_line(c: _XCell) -> bool:
+    """Dòng địa danh – ngày tháng của khối chữ ký: '<Địa danh>, Ngày …' ở bất kỳ cột nào, hoặc
+    'ngày … tháng/năm …' nằm bên phải (từ cột G). Dòng nội dung kiểu 'Tài liệu có thời gian từ ngày
+    01 tháng 01 năm 2006' ở cột trái không bị nhầm."""
     k = _key(c.text)
-    return ("phê duyệt" in k or "người lập" in k
-            or (c.col > 6 and "ngày" in k and ("tháng" in k or "năm" in k)))
+    return bool(_SIG_DATE.match(k)) or (c.col > 6 and "ngày" in k and ("tháng" in k or "năm" in k))
 
 
-def _parse_closing(ws) -> ClosingData:
+def _is_signature_cell(c: _XCell) -> bool:
+    """Ô mở đầu khối chữ ký: 'PHÊ DUYỆT' / 'Người lập…' ở bất kỳ cột nào, hoặc dòng ngày tháng."""
+    k = _key(c.text)
+    return "phê duyệt" in k or "người lập" in k or _is_date_line(c)
+
+
+def _split_signature(cells: Sequence[_XCell]) -> tuple[list[TextLine], list[TextLine]]:
+    """Chia các ô của khối chữ ký thành hai cột trái/phải theo VỊ TRÍ TƯƠNG ĐỐI (điểm giữa của
+    các cột có chữ, không cố định ở cột G vì mỗi tệp đặt khác nhau); dòng ngày tháng và 'Người lập'
+    luôn bên phải, 'PHÊ DUYỆT' luôn bên trái. Dòng trống giữa hai ô (vd. chức danh → tên người ký)
+    được giữ lại thành khoảng cách phía trên (13 pt mỗi dòng, tối đa 4 dòng)."""
+    if not cells:
+        return [], []
+    mid = (min(c.col for c in cells) + max(c.col for c in cells)) / 2
+    left: list[tuple[int, TextLine]] = []
+    right: list[tuple[int, TextLine]] = []
+    for c in cells:
+        k = _key(c.text)
+        if _is_date_line(c) or "người lập" in k:
+            side = right
+        elif "phê duyệt" in k:
+            side = left
+        else:
+            side = left if c.col <= mid else right
+        side.append((c.row, TextLine(c.text, c.bold, c.color)))
+
+    def finish(block):
+        block.sort(key=lambda rc: rc[0])
+        lines = []
+        for i, (row, ln) in enumerate(block):
+            if i:
+                gap = row - block[i - 1][0] - 1
+                ln.space_before = 13.0 * min(max(gap, 0), 4)
+            lines.append(ln)
+        return lines
+
+    return finish(left), finish(right)
+
+
+def _is_closing_title(cells: Sequence[_XCell]) -> bool:
+    """Dòng tiêu đề chứng từ: 'CHỨNG TỪ KẾT THÚC' hoặc viết tắt 'CTKT'."""
+    k = _key(" ".join(c.text for c in cells))
+    return "chứng từ kết thúc" in k or k == "ctkt"
+
+
+def _parse_closing(ws, trusted: bool = False) -> ClosingData:
+    """trusted=True: sheet đã được xác định là Chứng từ kết thúc theo TÊN sheet, nên không bắt buộc
+    có dòng tiêu đề (khi thiếu sẽ in tiêu đề chuẩn). Tiêu đề viết tắt 'CTKT' được in đầy đủ."""
     rows = _text_rows(ws)
-    # Điểm neo "CHỨNG TỪ KẾT THÚC" phải nằm trong 3 dòng chữ đầu; dòng lạ phía trên bị bỏ qua
-    title_i = _find_row(rows[:3], lambda cells: _row_has(cells, "chứng từ kết thúc"))
+    # Điểm neo tiêu đề phải nằm trong 3 dòng chữ đầu; dòng lạ phía trên bị bỏ qua
+    title_i = _find_row(rows[:3], _is_closing_title)
+    if title_i is None and not (trusted and rows):
+        raise _PartNotFound("không có dòng 'CHỨNG TỪ KẾT THÚC' (hoặc 'CTKT') ở đầu sheet")
     if title_i is None:
-        raise _PartNotFound("không có dòng 'CHỨNG TỪ KẾT THÚC' ở đầu sheet")
-    rows = rows[title_i:]
-    sig = _find_row(rows, lambda cells: any(_is_signature_cell(c) for c in cells), 1)
+        title, body_from = TextLine(CLOSING_TITLE, bold=True), 0
+    else:
+        rows = rows[title_i:]
+        title, body_from = _line_of(rows[0]), 1
+        if _key(title.text) == "ctkt":
+            title = TextLine(CLOSING_TITLE, True, title.color)
+    sig = _find_row(rows, lambda cells: any(_is_signature_cell(c) for c in cells), body_from)
     if sig is None:
         sig = len(rows)
-    left, right = [], []
-    for cells in rows[sig:]:
-        for c in cells:
-            (left if c.col <= 6 else right).append(TextLine(c.text, c.bold, c.color))
+    left, right = _split_signature([c for cells in rows[sig:] for c in cells])
     return ClosingData(
-        title=_line_of(rows[0]),
-        body_lines=[_line_of(cells) for cells in rows[1:sig]],
+        title=title,
+        body_lines=[_line_of(cells) for cells in rows[body_from:sig]],
         left_lines=left,
         right_lines=right,
     )
@@ -556,34 +692,38 @@ _PARSERS = {
 
 
 def _extract(wb) -> WorkbookData:
-    """Nhận diện sheet theo nội dung (dự phòng theo thứ tự sheet) và tách 5 phần."""
+    """Nhận diện sheet theo nội dung → tên sheet → thứ tự sheet chuẩn, rồi tách 5 phần."""
     sheets = wb.worksheets
     keys = [_sheet_keys(ws) for ws in sheets]
-    # Sheet "Biên mục" (MỤC LỤC VĂN BẢN, TÀI LIỆU) không bao giờ được gán cho phần nào
-    taken: set[int] = {i for i, k in enumerate(keys) if _has(k, "mục lục văn bản")}
+    # Sheet "Biên mục" không bao giờ được gán cho phần nào (kể cả khi dự phòng theo thứ tự)
+    taken: set[int] = {i for i, ws in enumerate(sheets) if _is_bien_muc(ws, keys[i])}
     parts: dict[str, object] = {}
     names: dict[str, str] = {}
     for part, predicates, fallback in _PART_RULES:
         idx = next((i for pred in predicates for i in range(len(sheets))
-                    if i not in taken and pred(keys[i])), None)
-        if idx is None:
-            fb = fallback if fallback >= 0 else len(sheets) - 1
-            idx = fb if 0 <= fb < len(sheets) and fb not in taken else None
+                    if i not in taken and pred(sheets[i], keys[i])), None)
+        if idx is None and fallback >= 0:
+            idx = fallback if fallback < len(sheets) and fallback not in taken else None
+        elif idx is None:      # Chứng từ kết thúc: sheet cuối cùng chưa dùng (sau khi bỏ Biên mục)
+            idx = next((i for i in range(len(sheets) - 1, -1, -1) if i not in taken), None)
         if idx is None:
             continue
         try:
-            parts[part] = _PARSERS[part](sheets[idx])
+            if part == "closing":
+                parts[part] = _parse_closing(sheets[idx], trusted=_is_closing_name(sheets[idx]))
+            else:
+                parts[part] = _PARSERS[part](sheets[idx])
         except _PartNotFound as exc:
             if part == "main_table":
                 raise ConvertError(
                     "Không tìm thấy bảng thống kê hồ sơ (sheet có hàng tiêu đề "
-                    "'Số hồ sơ' và 'Tên nhóm và tên hồ sơ'): %s." % exc) from None
+                    "'Số hồ sơ'/'Hồ sơ số' và 'Tên nhóm và tên hồ sơ'): %s." % exc) from None
             continue
         taken.add(idx)
         names[part] = sheets[idx].title
     if "main_table" not in parts:
         raise ConvertError("Tệp Excel không có sheet BẢNG THỐNG KÊ HỒ SƠ "
-                           "(hàng tiêu đề 'Số hồ sơ' / 'Tên nhóm và tên hồ sơ').")
+                           "(hàng tiêu đề 'Số hồ sơ'/'Hồ sơ số' và 'Tên nhóm và tên hồ sơ').")
     return WorkbookData(
         main_table=parts["main_table"],
         cover=parts.get("cover"),
@@ -867,14 +1007,22 @@ def _build_appendix(doc, section, appendix: TableData, page_size: str, _font_pt)
         _row_props(row, cant_split=True, min_height=APPENDIX_ROW_HEIGHT)
 
 
+def _main_proportions(headers: Sequence[str]) -> list[int]:
+    """Bề rộng tương đối của từng cột theo chữ trong ô tiêu đề (xem MAIN_COL_WIDTH_RULES)."""
+    out = []
+    for h in headers:
+        k = _key(h)
+        out.append(next((w for needle, w in MAIN_COL_WIDTH_RULES if needle in k), MAIN_COL_WIDTH_DEFAULT))
+    return out
+
+
 def _build_main_table(doc, section, main: MainTableData, page_size: str, font_pt: float):
     text_w = _page_setup(section, page_size, MARGINS_MAIN)
     last = len(main.title_lines) - 1
     for i, ln in enumerate(main.title_lines):
         _add_par(doc, ln.text, size=11, bold=True, before=24 if i == 0 else 0,
                  after=10 if i == last else 0)
-    proportions = MAIN_PROPORTIONS_13 if len(main.headers) == 13 else main.col_widths
-    widths = _distribute(text_w, proportions)
+    widths = _distribute(text_w, _main_proportions(main.headers))
     n_header = 1 + (1 if main.numbering else 0)
     table = _add_table(doc, n_header + len(main.rows), widths, borders=(6, 6),
                        cell_margins=(int(0.02 * INCH), int(0.04 * INCH),
@@ -919,7 +1067,7 @@ def _build_closing(doc, section, closing: ClosingData, page_size: str, _font_pt)
         _style_paragraph_mark(cell.paragraphs[0], 13)
         for i, ln in enumerate(lines):
             _add_par(cell, ln.text, size=13, bold=ln.bold, color=ln.color,
-                     before=18 if i == 0 else 0, reuse_first=(i == 0))
+                     before=18 if i == 0 else ln.space_before, reuse_first=(i == 0))
 
 
 # ---------------------------------------------------------------------------
